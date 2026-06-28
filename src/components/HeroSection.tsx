@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { MathPracticeDialog } from "./MathPracticeDialog";
 import { GiftedInfoDialog } from "./GiftedInfoDialog";
-import { AdaptiveAssessmentDialog } from "./AdaptiveAssessmentDialog";
 
 interface HeroSectionProps {
   onGetStarted: () => void;
@@ -56,16 +55,6 @@ const ArrowRightIcon = () => (
   </svg>
 );
 
-const GaugeIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 12a9 9 0 1 0-18 0" />
-    <path d="M12 12l4-4" />
-    <path d="M7 12h.01" />
-    <path d="M12 7h.01" />
-    <path d="M17 12h.01" />
-  </svg>
-);
-
 const ComingSoonIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="9" />
@@ -76,7 +65,6 @@ const ComingSoonIcon = () => (
 export function HeroSection({ onGetStarted }: HeroSectionProps) {
   const [isMathDialogOpen, setIsMathDialogOpen] = useState(false);
   const [isGiftedDialogOpen, setIsGiftedDialogOpen] = useState(false);
-  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
 
   const subjects = [
     { icon: <CalculatorIcon />, label: "חשבון", color: "var(--accent-math)", id: "math" },
@@ -271,30 +259,11 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
 
         {/* CTA Buttons */}
         <motion.div
-          className="flex flex-col sm:flex-row justify-center items-center gap-4"
+          className="flex justify-center items-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
         >
-          <motion.button
-            className="group relative px-8 py-4 rounded-2xl text-lg font-semibold overflow-hidden flex items-center gap-3"
-            style={{
-              fontFamily: "'Rubik', sans-serif",
-              background: "var(--bg-card)",
-              color: "var(--text-primary)",
-              border: "2px solid var(--border-accent)",
-              boxShadow: "0 4px 20px rgba(59, 130, 246, 0.18)",
-            }}
-            onClick={() => setIsAssessmentDialogOpen(true)}
-            whileHover={{ scale: 1.05, borderColor: "var(--accent-primary)" }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <span className="relative z-10" style={{ color: "var(--accent-primary)" }}>
-              <GaugeIcon />
-            </span>
-            <span className="relative z-10">בדיקת קצב אדפטיבית</span>
-          </motion.button>
-
           <motion.button
             className="group relative px-10 py-4 rounded-2xl text-lg font-semibold overflow-hidden flex items-center gap-3"
             style={{
@@ -400,11 +369,6 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
         onClose={() => setIsGiftedDialogOpen(false)}
       />
 
-      {/* Adaptive Assessment Dialog */}
-      <AdaptiveAssessmentDialog
-        isOpen={isAssessmentDialogOpen}
-        onClose={() => setIsAssessmentDialogOpen(false)}
-      />
     </section>
   );
 }
