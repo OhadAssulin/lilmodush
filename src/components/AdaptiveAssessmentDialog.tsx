@@ -7,6 +7,7 @@ import {
   AdaptiveItem,
   AdaptiveReadingSupport,
   AdaptiveSession,
+  buildAssessmentHistoryEntry,
   buildAssessmentProgress,
   buildAdaptiveReport,
   buildParentReport,
@@ -18,10 +19,12 @@ import {
   levelLabels,
   recordAdaptiveAnswer,
 } from "@/lib/adaptive-assessment";
+import { AssessmentHistoryEntry } from "@/types";
 
 interface AdaptiveAssessmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onAssessmentComplete?: (entry: AssessmentHistoryEntry) => void;
 }
 
 type AssessmentStep = "intro" | "question" | "result";
@@ -46,7 +49,7 @@ const ResetIcon = () => (
   </svg>
 );
 
-export function AdaptiveAssessmentDialog({ isOpen, onClose }: AdaptiveAssessmentDialogProps) {
+export function AdaptiveAssessmentDialog({ isOpen, onClose, onAssessmentComplete }: AdaptiveAssessmentDialogProps) {
   const [step, setStep] = useState<AssessmentStep>("intro");
   const [session, setSession] = useState<AdaptiveSession | null>(null);
   const [currentItem, setCurrentItem] = useState<AdaptiveItem | null>(null);
@@ -104,6 +107,11 @@ export function AdaptiveAssessmentDialog({ isOpen, onClose }: AdaptiveAssessment
 
     window.setTimeout(() => {
       if (isAdaptiveSessionComplete(nextSession) || !nextItem) {
+        const completedReports = buildAdaptiveReport(nextSession);
+        const completedParentReport = buildParentReport(nextSession, completedReports);
+        onAssessmentComplete?.(
+          buildAssessmentHistoryEntry(nextSession, completedReports, completedParentReport)
+        );
         setCurrentItem(null);
         setStep("result");
       } else {

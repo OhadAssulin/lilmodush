@@ -1,3 +1,10 @@
+import type {
+  AssessmentConfidence,
+  AssessmentDomainSnapshot,
+  AssessmentHistoryEntry,
+  AssessmentStatus,
+} from "@/types";
+
 export type AdaptiveQuestionType = "multiple_choice" | "open_input";
 export type AdaptiveReadingSupport = "with_nikud" | "without_nikud";
 export type AdaptivePresentationMode = "ניקוד מלא" | "ללא ניקוד";
@@ -1697,6 +1704,33 @@ export function buildParentReport(session: AdaptiveSession, reports: DomainRepor
   };
 }
 
+export function buildAssessmentHistoryEntry(
+  session: AdaptiveSession,
+  reports: DomainReport[],
+  parentReport: ParentReport,
+  completedAt = new Date()
+): AssessmentHistoryEntry {
+  const domains = reports.map(toDomainSnapshot);
+
+  return {
+    id: `assessment-${completedAt.getTime()}-${session.answers.length}`,
+    completedAt: completedAt.toISOString(),
+    grade: session.grade,
+    expectedLevel: session.expectedLevel,
+    readingSupport: session.readingSupport,
+    overallStatus: getOverallStatus(reports) as AssessmentStatus,
+    averageScore: getAverageSkillScore(reports),
+    answeredCount: session.answers.length,
+    confidence: getOverallConfidence(reports) as AssessmentConfidence,
+    readingIndependence: getReadingIndependenceValue(session),
+    summaryLines: parentReport.summaryLines,
+    strength: toDomainSnapshot(parentReport.strengthDomain),
+    focus: toDomainSnapshot(parentReport.focusDomain),
+    domains,
+    weeklyPlan: parentReport.weeklyPlan,
+  };
+}
+
 export function getOverallStatus(reports: DomainReport[]): DomainReport["status"] {
   const countByStatus = reports.reduce(
     (counts, report) => {
@@ -1724,6 +1758,23 @@ export function getOverallStatus(reports: DomainReport[]): DomainReport["status"
   }
   if (countByStatus["כמעט בקצב"] + countByStatus["בקצב"] >= 3) return "כמעט בקצב";
   return "צריך חיזוק";
+}
+
+function toDomainSnapshot(report: DomainReport): AssessmentDomainSnapshot {
+  return {
+    domainId: report.domain.id,
+    label: report.domain.label,
+    shortLabel: report.domain.shortLabel,
+    emoji: report.domain.emoji,
+    color: report.domain.color,
+    status: report.status as AssessmentStatus,
+    skillScore: report.skillScore,
+    adjustedLevel: report.adjustedLevel,
+    confidence: report.confidence as AssessmentConfidence,
+    recommendation: report.recommendation,
+    answeredCount: report.answeredCount,
+    correctCount: report.correctCount,
+  };
 }
 
 function getPresentationMode(session: AdaptiveSession): AdaptivePresentationMode {

@@ -41,6 +41,7 @@ export function AddChildModal({ isOpen, onClose, onSave, editChild }: AddChildMo
         science: 0,
         knowledge: 0,
       },
+      assessmentHistory: editChild?.assessmentHistory || [],
       createdAt: editChild?.createdAt || new Date().toISOString(),
     };
 

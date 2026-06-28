@@ -6,6 +6,7 @@ export interface Child {
   avatar: string;
   subjects: Subject[];
   progress: Record<Subject, number>;
+  assessmentHistory?: AssessmentHistoryEntry[];
   createdAt: string;
 }
 
@@ -32,4 +33,45 @@ export interface Session {
   answers: Record<string, string>;
   score: number;
   completedAt?: string;
+}
+
+export type AssessmentStatus = "מחוננים" | "מעל הקצב" | "בקצב" | "כמעט בקצב" | "צריך חיזוק";
+export type AssessmentConfidence = "נמוך" | "בינוני" | "גבוה";
+export type AssessmentReadingSupport = "with_nikud" | "without_nikud";
+
+export interface AssessmentDomainSnapshot {
+  domainId: string;
+  label: string;
+  shortLabel: string;
+  emoji: string;
+  color: string;
+  status: AssessmentStatus;
+  skillScore: number;
+  adjustedLevel: number;
+  confidence: AssessmentConfidence;
+  recommendation: string;
+  answeredCount: number;
+  correctCount: number;
+}
+
+export interface AssessmentHistoryEntry {
+  id: string;
+  completedAt: string;
+  grade: 1 | 2 | 3;
+  expectedLevel: number;
+  readingSupport: AssessmentReadingSupport;
+  overallStatus: AssessmentStatus;
+  averageScore: number;
+  answeredCount: number;
+  confidence: AssessmentConfidence;
+  readingIndependence: string;
+  summaryLines: string[];
+  strength: AssessmentDomainSnapshot;
+  focus: AssessmentDomainSnapshot;
+  domains: AssessmentDomainSnapshot[];
+  weeklyPlan: {
+    day: string;
+    task: string;
+    goal: string;
+  }[];
 }

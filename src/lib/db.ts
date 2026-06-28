@@ -1,4 +1,4 @@
-import { Parent, Child } from "@/types";
+import { Parent, Child, AssessmentHistoryEntry } from "@/types";
 
 const STORAGE_KEY = "lilmodush_data";
 
@@ -87,6 +87,23 @@ export function updateChildProgress(
     const childIndex = parent.children.findIndex((c) => c.id === childId);
     if (childIndex !== -1) {
       parent.children[childIndex].progress[subject] = Math.min(100, progress);
+      saveDb(db);
+      return;
+    }
+  }
+}
+
+export function addChildAssessmentReport(childId: string, report: AssessmentHistoryEntry): void {
+  const db = getDb();
+  for (const parent of Object.values(db.parents)) {
+    const childIndex = parent.children.findIndex((child) => child.id === childId);
+    if (childIndex !== -1) {
+      const child = parent.children[childIndex];
+      const existingHistory = child.assessmentHistory || [];
+      parent.children[childIndex] = {
+        ...child,
+        assessmentHistory: [report, ...existingHistory].slice(0, 12),
+      };
       saveDb(db);
       return;
     }

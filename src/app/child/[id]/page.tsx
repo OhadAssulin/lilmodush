@@ -7,9 +7,9 @@ import { Header } from "@/components/Header";
 import { QuizCard } from "@/components/QuizCard";
 import { Footer } from "@/components/Footer";
 import { AdaptiveAssessmentDialog } from "@/components/AdaptiveAssessmentDialog";
-import { getChildById, updateChildProgress } from "@/lib/db";
+import { addChildAssessmentReport, getChildById, updateChildProgress } from "@/lib/db";
 import { getQuestions } from "@/lib/questions";
-import { Child, Subject, Question } from "@/types";
+import { AssessmentHistoryEntry, Child, Subject, Question } from "@/types";
 
 type PageParams = {
   params: Promise<{ id: string }>;
@@ -168,6 +168,15 @@ export default function ChildPage({ params }: PageParams) {
     setCurrentQuestionIndex(0);
     setScore(0);
     setQuizComplete(false);
+  };
+
+  const handleAssessmentComplete = (entry: AssessmentHistoryEntry) => {
+    if (!child) return;
+    addChildAssessmentReport(child.id, entry);
+    const latestData = getChildById(child.id);
+    if (latestData) {
+      setChild(latestData.child);
+    }
   };
 
   if (loading) {
@@ -527,6 +536,7 @@ export default function ChildPage({ params }: PageParams) {
       <AdaptiveAssessmentDialog
         isOpen={isAssessmentDialogOpen}
         onClose={() => setIsAssessmentDialogOpen(false)}
+        onAssessmentComplete={handleAssessmentComplete}
       />
 
       <Footer />
