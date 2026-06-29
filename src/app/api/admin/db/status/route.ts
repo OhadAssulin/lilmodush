@@ -1,10 +1,20 @@
-import { hasDatabase } from "@/lib/server/db";
+import {
+  getSupabaseUrl,
+  hasDatabase,
+  hasDirectDatabaseUrl,
+  hasSupabaseAnonKey,
+  hasSupabaseServiceRoleKey,
+} from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   return Response.json({
     configured: hasDatabase(),
-    provider: "neon-postgres",
+    provider: "supabase",
+    url: getSupabaseUrl(),
+    hasAnonKey: hasSupabaseAnonKey(),
+    hasServiceRoleKey: hasSupabaseServiceRoleKey(),
+    canInitializeSchema: hasDirectDatabaseUrl(),
   });
 }

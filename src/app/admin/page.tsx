@@ -21,6 +21,10 @@ type QuestionDraft = Omit<Question, "options"> & { optionsText: string };
 type DatabaseStatus = {
   configured: boolean;
   provider: string;
+  url?: string;
+  hasAnonKey?: boolean;
+  hasServiceRoleKey?: boolean;
+  canInitializeSchema?: boolean;
 };
 
 const subjectOptions: { id: Subject; label: string; emoji: string; color: string }[] = [
@@ -68,7 +72,7 @@ export default function AdminPage() {
       fetch("/api/admin/db/status")
         .then((response) => response.json() as Promise<DatabaseStatus>)
         .then(setDatabaseStatus)
-        .catch(() => setDatabaseStatus({ configured: false, provider: "neon-postgres" }));
+        .catch(() => setDatabaseStatus({ configured: false, provider: "supabase" }));
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -201,7 +205,11 @@ export default function AdminPage() {
     setDatabaseMessage("מאתחל סכימה...");
     try {
       const response = await fetch("/api/admin/db/init", { method: "POST" });
-      const data = (await response.json()) as { initialized?: boolean; statements?: number; error?: string };
+      const data = (await response.json()) as {
+        initialized?: boolean;
+        statements?: number;
+        error?: string;
+      };
       if (!response.ok || !data.initialized) {
         setDatabaseMessage(data.error || "אתחול בסיס הנתונים נכשל.");
         return;
@@ -244,20 +252,31 @@ export default function AdminPage() {
                   color: databaseStatus?.configured ? "var(--accent-success)" : "#f59e0b",
                 }}
               >
-                DB: {databaseStatus?.configured ? "מוגדר" : "לא מוגדר"}
+                Supabase: {databaseStatus?.configured ? "מוגדר" : "חסר מפתח anon"}
+              </span>
+              <span
+                className="px-3 py-2 rounded-xl text-sm"
+                style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}
+              >
+                {databaseStatus?.url || "https://smyxacjbjdcbtiwkczxe.supabase.co"}
               </span>
               <button
                 onClick={initializeDatabase}
-                disabled={!databaseStatus?.configured}
+                disabled={!databaseStatus?.canInitializeSchema}
                 className="px-4 py-2 rounded-xl text-sm font-semibold"
                 style={{
                   ...secondaryButtonStyle,
-                  opacity: databaseStatus?.configured ? 1 : 0.55,
-                  cursor: databaseStatus?.configured ? "pointer" : "not-allowed",
+                  opacity: databaseStatus?.canInitializeSchema ? 1 : 0.55,
+                  cursor: databaseStatus?.canInitializeSchema ? "pointer" : "not-allowed",
                 }}
               >
                 אתחל סכימת DB
               </button>
+              {!databaseStatus?.canInitializeSchema && (
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  להרצת סכימה מהכפתור צריך SUPABASE_DATABASE_URL, או להריץ את supabase/schema.sql ידנית.
+                </span>
+              )}
               {databaseMessage && (
                 <span className="text-sm" style={{ color: "var(--text-muted)" }}>
                   {databaseMessage}
