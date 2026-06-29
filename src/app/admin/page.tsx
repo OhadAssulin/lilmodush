@@ -31,6 +31,29 @@ type ProblemSetFilters = {
   skills: QuestionSkill[];
   difficultyScores: number[];
 };
+type FilterAnalyticsSummary = {
+  questionsCount: number;
+  attemptedQuestionsCount: number;
+  unansweredQuestionsCount: number;
+  attemptsCount: number;
+  uniqueChildrenCount: number;
+  solvedCount: number;
+  solveRate: number;
+  gradeBreakdown: FilterAnalyticsLine[];
+  childPerformanceBreakdown: FilterAnalyticsLine[];
+  subjectBreakdown: FilterAnalyticsLine[];
+  questionTypeBreakdown: FilterAnalyticsLine[];
+  difficultyBreakdown: FilterAnalyticsLine[];
+  skillBreakdown: FilterAnalyticsLine[];
+};
+type FilterAnalyticsLine = {
+  id: string;
+  label: string;
+  attemptsCount: number;
+  uniqueChildrenCount: number;
+  solvedCount: number;
+  solveRate: number;
+};
 type DatabaseStatus = {
   configured: boolean;
   provider: string;
@@ -541,6 +564,10 @@ function ProblemSetView({
   const availableSkillOptions = questionSkillOptions.filter(
     (skill) => filters.subjects.length === 0 || filters.subjects.includes(skill.subject)
   );
+  const filterAnalytics = useMemo(
+    () => buildFilterAnalyticsSummary(questions, analyticsAttempts),
+    [analyticsAttempts, questions]
+  );
   const hasActiveFilters =
     filters.subjects.length > 0 ||
     filters.questionTypes.length > 0 ||
@@ -655,6 +682,7 @@ function ProblemSetView({
               </FilterGroup>
             </div>
           </div>
+          <FilterAnalyticsPanel summary={filterAnalytics} />
         </div>
 
         <div className="space-y-3">
@@ -944,6 +972,92 @@ function QuestionEditor({
   );
 }
 
+function FilterAnalyticsPanel({ summary }: { summary: FilterAnalyticsSummary }) {
+  return (
+    <div
+      className="p-4 rounded-2xl"
+      style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 className="font-bold" style={{ color: "var(--text-primary)", fontFamily: "'Rubik', sans-serif" }}>
+            אנליטיקה לפילטר הנוכחי
+          </h3>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            הנתונים מחושבים רק על השאלות שמופיעות כרגע ברשימה.
+          </p>
+        </div>
+        <span className="px-3 py-1 rounded-full text-sm" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
+          {summary.attemptedQuestionsCount}/{summary.questionsCount} שאלות נוסו
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mb-4">
+        <SmallStat label="שאלות בפילטר" value={summary.questionsCount.toString()} />
+        <SmallStat label="ניסיונות" value={summary.attemptsCount.toString()} />
+        <SmallStat label="ילדים שענו" value={summary.uniqueChildrenCount.toString()} />
+        <SmallStat label="פתרו נכון" value={summary.solvedCount.toString()} />
+        <SmallStat label="אחוז הצלחה" value={`${summary.solveRate}%`} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <AnalyticsPanel title="איזה כיתות ענו">
+          <AnalyticsLineList lines={summary.gradeBreakdown} emptyText="אין עדיין תשובות בפילטר הזה" />
+        </AnalyticsPanel>
+
+        <AnalyticsPanel title="סוג ילדים לפי ביצועים">
+          <AnalyticsLineList lines={summary.childPerformanceBreakdown} emptyText="אין מספיק תשובות לסיווג ילדים" />
+        </AnalyticsPanel>
+
+        <AnalyticsPanel title="לפי תחום">
+          <AnalyticsLineList lines={summary.subjectBreakdown} emptyText="אין עדיין תשובות לפי תחום" />
+        </AnalyticsPanel>
+
+        <AnalyticsPanel title="לפי סוג מענה">
+          <AnalyticsLineList lines={summary.questionTypeBreakdown} emptyText="אין עדיין תשובות לפי סוג" />
+        </AnalyticsPanel>
+
+        <AnalyticsPanel title="לפי דרגת קושי">
+          <AnalyticsLineList lines={summary.difficultyBreakdown} emptyText="אין עדיין תשובות לפי קושי" />
+        </AnalyticsPanel>
+
+        <AnalyticsPanel title="מיומנויות מובילות">
+          <AnalyticsLineList lines={summary.skillBreakdown.slice(0, 8)} emptyText="אין עדיין תשובות לפי מיומנות" />
+        </AnalyticsPanel>
+      </div>
+
+      {summary.unansweredQuestionsCount > 0 && (
+        <p className="text-sm mt-4" style={{ color: "var(--text-muted)" }}>
+          {summary.unansweredQuestionsCount} שאלות בפילטר עדיין לא קיבלו תשובה מאף ילד.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AnalyticsLineList({ lines, emptyText }: { lines: FilterAnalyticsLine[]; emptyText: string }) {
+  if (lines.length === 0) {
+    return (
+      <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+        {emptyText}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      {lines.map((line) => (
+        <AnalyticsLine
+          key={line.id}
+          label={line.label}
+          value={`${line.uniqueChildrenCount} ילדים · ${line.attemptsCount} תשובות · ${line.solveRate}%`}
+          highlight={line.solveRate >= 80}
+        />
+      ))}
+    </>
+  );
+}
+
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
@@ -1072,6 +1186,135 @@ function getQuestionTypeLabel(type: QuestionType): string {
 function clampDifficultyScore(value: number): number {
   if (!Number.isFinite(value)) return 2;
   return Math.min(10, Math.max(1, Math.round(value)));
+}
+
+function buildFilterAnalyticsSummary(
+  questions: Question[],
+  attempts: QuestionAnalyticsAttempt[]
+): FilterAnalyticsSummary {
+  const questionsById = new Map(questions.map((question) => [question.id, question]));
+  const questionIds = new Set(questions.map((question) => question.id));
+  const relevantAttempts = attempts.filter((attempt) => questionIds.has(attempt.questionId));
+  const attemptedQuestionIds = new Set(relevantAttempts.map((attempt) => attempt.questionId));
+  const uniqueChildren = new Set(relevantAttempts.map((attempt) => attempt.childId));
+  const solvedCount = relevantAttempts.filter((attempt) => attempt.isCorrect).length;
+
+  return {
+    questionsCount: questions.length,
+    attemptedQuestionsCount: attemptedQuestionIds.size,
+    unansweredQuestionsCount: Math.max(0, questions.length - attemptedQuestionIds.size),
+    attemptsCount: relevantAttempts.length,
+    uniqueChildrenCount: uniqueChildren.size,
+    solvedCount,
+    solveRate: getSolveRate(solvedCount, relevantAttempts.length),
+    gradeBreakdown: buildAttemptBreakdown(relevantAttempts, (attempt) => ({
+      id: attempt.grade?.toString() || "unknown",
+      label: getGradeLabel(attempt.grade),
+    })),
+    childPerformanceBreakdown: buildChildPerformanceBreakdown(relevantAttempts),
+    subjectBreakdown: buildAttemptBreakdown(relevantAttempts, (attempt) => {
+      const subject = questionsById.get(attempt.questionId)?.subject || attempt.subject;
+      return {
+        id: subject,
+        label: getSubjectLabel(subject),
+      };
+    }),
+    questionTypeBreakdown: buildAttemptBreakdown(relevantAttempts, (attempt) => {
+      const questionType = questionsById.get(attempt.questionId)?.type || attempt.questionType;
+      return {
+        id: questionType,
+        label: getQuestionTypeLabel(questionType),
+      };
+    }),
+    difficultyBreakdown: buildAttemptBreakdown(relevantAttempts, (attempt) => {
+      const difficultyScore = questionsById.get(attempt.questionId)?.difficultyScore || attempt.difficultyScore;
+      return {
+        id: difficultyScore.toString(),
+        label: `קושי ${difficultyScore}/10`,
+      };
+    }),
+    skillBreakdown: buildAttemptBreakdown(relevantAttempts, (attempt) => {
+      const skill = questionsById.get(attempt.questionId)?.skill || attempt.questionSkill;
+      return {
+        id: skill,
+        label: getQuestionSkillLabel(skill),
+      };
+    }),
+  };
+}
+
+function buildAttemptBreakdown(
+  attempts: QuestionAnalyticsAttempt[],
+  getGroup: (attempt: QuestionAnalyticsAttempt) => { id: string; label: string }
+): FilterAnalyticsLine[] {
+  const groups = new Map<string, { label: string; attempts: QuestionAnalyticsAttempt[] }>();
+
+  attempts.forEach((attempt) => {
+    const group = getGroup(attempt);
+    const existing = groups.get(group.id) || { label: group.label, attempts: [] };
+    existing.attempts.push(attempt);
+    groups.set(group.id, existing);
+  });
+
+  return Array.from(groups.entries())
+    .map(([id, group]) => buildAnalyticsLine(id, group.label, group.attempts))
+    .sort((a, b) => b.attemptsCount - a.attemptsCount || b.solveRate - a.solveRate);
+}
+
+function buildChildPerformanceBreakdown(attempts: QuestionAnalyticsAttempt[]): FilterAnalyticsLine[] {
+  const byChild = new Map<string, QuestionAnalyticsAttempt[]>();
+  attempts.forEach((attempt) => {
+    byChild.set(attempt.childId, [...(byChild.get(attempt.childId) || []), attempt]);
+  });
+
+  const buckets: Record<string, { label: string; attempts: QuestionAnalyticsAttempt[] }> = {
+    strong: { label: "חזקים בפילטר", attempts: [] },
+    steady: { label: "באמצע", attempts: [] },
+    needs_work: { label: "צריכים חיזוק", attempts: [] },
+  };
+
+  byChild.forEach((childAttempts) => {
+    const solved = childAttempts.filter((attempt) => attempt.isCorrect).length;
+    const solveRate = getSolveRate(solved, childAttempts.length);
+    if (solveRate >= 80) {
+      buckets.strong.attempts.push(...childAttempts);
+    } else if (solveRate >= 50) {
+      buckets.steady.attempts.push(...childAttempts);
+    } else {
+      buckets.needs_work.attempts.push(...childAttempts);
+    }
+  });
+
+  return Object.entries(buckets)
+    .filter(([, bucket]) => bucket.attempts.length > 0)
+    .map(([id, bucket]) => buildAnalyticsLine(id, bucket.label, bucket.attempts));
+}
+
+function buildAnalyticsLine(
+  id: string,
+  label: string,
+  attempts: QuestionAnalyticsAttempt[]
+): FilterAnalyticsLine {
+  const solvedCount = attempts.filter((attempt) => attempt.isCorrect).length;
+  return {
+    id,
+    label,
+    attemptsCount: attempts.length,
+    uniqueChildrenCount: new Set(attempts.map((attempt) => attempt.childId)).size,
+    solvedCount,
+    solveRate: getSolveRate(solvedCount, attempts.length),
+  };
+}
+
+function getSolveRate(solvedCount: number, attemptsCount: number): number {
+  return attemptsCount === 0 ? 0 : Math.round((solvedCount / attemptsCount) * 100);
+}
+
+function getGradeLabel(grade: 1 | 2 | 3 | null): string {
+  if (grade === 1) return "כיתה א׳";
+  if (grade === 2) return "כיתה ב׳";
+  if (grade === 3) return "כיתה ג׳";
+  return "לא ידוע";
 }
 
 function getSubjectLabel(subject: Subject): string {
