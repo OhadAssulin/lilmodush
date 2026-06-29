@@ -14,10 +14,23 @@ import {
   resetQuestionBank,
   saveQuestionBank,
 } from "@/lib/questions";
-import { Child, Parent, Question, QuestionAnalyticsAttempt, QuestionType, Subject } from "@/types";
+import {
+  defaultQuestionSkillBySubject,
+  getQuestionSkillLabel,
+  getQuestionSkillsBySubject,
+  isQuestionSkillForSubject,
+  questionSkillOptions,
+} from "@/lib/question-skills";
+import { Child, Parent, Question, QuestionAnalyticsAttempt, QuestionSkill, QuestionType, Subject } from "@/types";
 
 type AdminTab = "parents" | "children" | "problem-set";
 type QuestionDraft = Omit<Question, "options"> & { optionsText: string };
+type ProblemSetFilters = {
+  subjects: Subject[];
+  questionTypes: QuestionType[];
+  skills: QuestionSkill[];
+  difficultyScores: number[];
+};
 type DatabaseStatus = {
   configured: boolean;
   provider: string;
@@ -47,6 +60,7 @@ const emptyDraft: QuestionDraft = {
   id: "",
   subject: "math",
   type: "multiple_choice",
+  skill: defaultQuestionSkillBySubject.math,
   difficultyScore: 2,
   question: "",
   optionsText: "",
@@ -59,7 +73,12 @@ export default function AdminPage() {
   const [parents, setParents] = useState<Parent[]>([]);
   const [questionBank, setQuestionBank] = useState<Record<Subject, Question[]> | null>(null);
   const [search, setSearch] = useState("");
-  const [subjectFilter, setSubjectFilter] = useState<Subject | "all">("all");
+  const [filters, setFilters] = useState<ProblemSetFilters>({
+    subjects: [],
+    questionTypes: [],
+    skills: [],
+    difficultyScores: [],
+  });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestionDraft>(emptyDraft);
   const [analyticsAttempts, setAnalyticsAttempts] = useState<QuestionAnalyticsAttempt[]>([]);
@@ -97,16 +116,24 @@ export default function AdminPage() {
   const filteredQuestions = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     return questions.filter((question) => {
-      const matchesSubject = subjectFilter === "all" || question.subject === subjectFilter;
+      const matchesSubject =
+        filters.subjects.length === 0 || filters.subjects.includes(question.subject);
+      const matchesQuestionType =
+        filters.questionTypes.length === 0 || filters.questionTypes.includes(question.type);
+      const matchesSkill = filters.skills.length === 0 || filters.skills.includes(question.skill);
+      const matchesDifficulty =
+        filters.difficultyScores.length === 0 ||
+        filters.difficultyScores.includes(question.difficultyScore);
       const matchesSearch =
         normalizedSearch.length === 0 ||
         question.question.toLowerCase().includes(normalizedSearch) ||
         question.correctAnswer.toLowerCase().includes(normalizedSearch) ||
-        question.id.toLowerCase().includes(normalizedSearch);
+        question.id.toLowerCase().includes(normalizedSearch) ||
+        getQuestionSkillLabel(question.skill).toLowerCase().includes(normalizedSearch);
 
-      return matchesSubject && matchesSearch;
+      return matchesSubject && matchesQuestionType && matchesSkill && matchesDifficulty && matchesSearch;
     });
-  }, [questions, search, subjectFilter]);
+  }, [filters, questions, search]);
 
   const totalReports = children.reduce(
     (sum, item) => sum + (item.child.assessmentHistory?.length || 0),
@@ -162,6 +189,9 @@ export default function AdminPage() {
       id: draft.id.trim() || createQuestionId(draft.subject),
       subject: draft.subject,
       type: draft.type,
+      skill: isQuestionSkillForSubject(draft.skill, draft.subject)
+        ? draft.skill
+        : defaultQuestionSkillBySubject[draft.subject],
       difficultyScore: clampDifficultyScore(draft.difficultyScore),
       question: draft.question.trim(),
       options: draft.type === "multiple_choice" ? options : undefined,
@@ -256,7 +286,7 @@ export default function AdminPage() {
               >
                 Supabase: {databaseStatus?.configured ? "מוגדר לשרת" : "חסר מפתח"}
               </span>
-              {!databaseStatus?.hasBrowserKey && (
+              {databaseStatus && !databaseStatus.hasBrowserKey && (
                 <span
                   className="px-3 py-2 rounded-xl text-sm"
                   style={{ background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b" }}
@@ -320,13 +350,14 @@ export default function AdminPage() {
           {activeTab === "problem-set" && (
             <ProblemSetView
               questions={filteredQuestions}
+              totalQuestions={questions.length}
               analyticsAttempts={analyticsAttempts}
               search={search}
-              subjectFilter={subjectFilter}
+              filters={filters}
               draft={draft}
               editingId={editingId}
               onSearchChange={setSearch}
-              onSubjectFilterChange={setSubjectFilter}
+              onFiltersChange={setFilters}
               onDraftChange={setDraft}
               onNewQuestion={startNewQuestion}
               onEditQuestion={startEditQuestion}
@@ -474,13 +505,14 @@ function ChildrenView({ kids }: { kids: { parentUsername: string; child: Child }
 
 function ProblemSetView({
   questions,
+  totalQuestions,
   analyticsAttempts,
   search,
-  subjectFilter,
+  filters,
   draft,
   editingId,
   onSearchChange,
-  onSubjectFilterChange,
+  onFiltersChange,
   onDraftChange,
   onNewQuestion,
   onEditQuestion,
@@ -490,13 +522,14 @@ function ProblemSetView({
   onRestoreDefaults,
 }: {
   questions: Question[];
+  totalQuestions: number;
   analyticsAttempts: QuestionAnalyticsAttempt[];
   search: string;
-  subjectFilter: Subject | "all";
+  filters: ProblemSetFilters;
   draft: QuestionDraft;
   editingId: string | null;
   onSearchChange: (value: string) => void;
-  onSubjectFilterChange: (value: Subject | "all") => void;
+  onFiltersChange: (value: ProblemSetFilters) => void;
   onDraftChange: (value: QuestionDraft) => void;
   onNewQuestion: () => void;
   onEditQuestion: (question: Question) => void;
@@ -505,6 +538,30 @@ function ProblemSetView({
   onCancelEdit: () => void;
   onRestoreDefaults: () => void;
 }) {
+  const availableSkillOptions = questionSkillOptions.filter(
+    (skill) => filters.subjects.length === 0 || filters.subjects.includes(skill.subject)
+  );
+  const hasActiveFilters =
+    filters.subjects.length > 0 ||
+    filters.questionTypes.length > 0 ||
+    filters.skills.length > 0 ||
+    filters.difficultyScores.length > 0 ||
+    search.trim().length > 0;
+
+  const updateFilters = <Key extends keyof ProblemSetFilters>(
+    key: Key,
+    value: ProblemSetFilters[Key]
+  ) => {
+    const nextFilters = { ...filters, [key]: value };
+    if (key === "subjects") {
+      nextFilters.skills = nextFilters.skills.filter((skill) => {
+        const option = questionSkillOptions.find((item) => item.id === skill);
+        return option && (nextFilters.subjects.length === 0 || nextFilters.subjects.includes(option.subject));
+      });
+    }
+    onFiltersChange(nextFilters);
+  };
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px] gap-6">
       <section className="glass-card rounded-3xl p-5">
@@ -527,27 +584,77 @@ function ProblemSetView({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-3 mb-5">
+        <div className="grid grid-cols-1 gap-3 mb-5">
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="חיפוש לפי שאלה, תשובה או ID..."
+            placeholder="חיפוש לפי שאלה, תשובה, מיומנות או ID..."
             className="px-4 py-3 rounded-xl"
             style={inputStyle}
           />
-          <select
-            value={subjectFilter}
-            onChange={(event) => onSubjectFilterChange(event.target.value as Subject | "all")}
-            className="px-4 py-3 rounded-xl"
-            style={inputStyle}
-          >
-            <option value="all">כל התחומים</option>
-            {subjectOptions.map((subject) => (
-              <option key={subject.id} value={subject.id}>
-                {subject.label}
-              </option>
-            ))}
-          </select>
+          <div className="p-4 rounded-2xl" style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="font-bold" style={{ color: "var(--text-primary)", fontFamily: "'Rubik', sans-serif" }}>
+                  סינון מתקדם
+                </h3>
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  {questions.length} מתוך {totalQuestions} שאלות מוצגות
+                </p>
+              </div>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    onSearchChange("");
+                    onFiltersChange({ subjects: [], questionTypes: [], skills: [], difficultyScores: [] });
+                  }}
+                  className="px-3 py-2 rounded-xl text-sm font-semibold"
+                  style={secondaryButtonStyle}
+                >
+                  איפוס סינון
+                </button>
+              )}
+            </div>
+            <div className="space-y-4">
+              <FilterGroup title="תחומים">
+                <TogglePillGroup
+                  options={subjectOptions.map((subject) => ({
+                    id: subject.id,
+                    label: `${subject.emoji} ${subject.label}`,
+                  }))}
+                  selected={filters.subjects}
+                  onChange={(value) => updateFilters("subjects", value as Subject[])}
+                />
+              </FilterGroup>
+
+              <FilterGroup title="סוג מענה">
+                <TogglePillGroup
+                  options={questionTypeOptions.map((type) => ({ id: type.id, label: type.label }))}
+                  selected={filters.questionTypes}
+                  onChange={(value) => updateFilters("questionTypes", value as QuestionType[])}
+                />
+              </FilterGroup>
+
+              <FilterGroup title="דרגת קושי">
+                <TogglePillGroup
+                  options={difficultyScoreOptions.map((score) => ({ id: score.toString(), label: `${score}/10` }))}
+                  selected={filters.difficultyScores.map(String)}
+                  onChange={(value) => updateFilters("difficultyScores", value.map(Number))}
+                />
+              </FilterGroup>
+
+              <FilterGroup title="מיומנויות">
+                <TogglePillGroup
+                  options={availableSkillOptions.map((skill) => ({
+                    id: skill.id,
+                    label: `${getSubjectLabel(skill.subject)} · ${skill.label}`,
+                  }))}
+                  selected={filters.skills}
+                  onChange={(value) => updateFilters("skills", value)}
+                />
+              </FilterGroup>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -599,6 +706,9 @@ function QuestionRow({
             </span>
             <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
               {getQuestionTypeLabel(question.type)}
+            </span>
+            <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
+              {getQuestionSkillLabel(question.skill)}
             </span>
             <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
               קושי {question.difficultyScore}/10
@@ -715,7 +825,16 @@ function QuestionEditor({
           <Field label="תחום">
             <select
               value={draft.subject}
-              onChange={(event) => onDraftChange({ ...draft, subject: event.target.value as Subject })}
+              onChange={(event) => {
+                const nextSubject = event.target.value as Subject;
+                onDraftChange({
+                  ...draft,
+                  subject: nextSubject,
+                  skill: isQuestionSkillForSubject(draft.skill, nextSubject)
+                    ? draft.skill
+                    : defaultQuestionSkillBySubject[nextSubject],
+                });
+              }}
               className="w-full px-4 py-3 rounded-xl"
               style={inputStyle}
             >
@@ -741,6 +860,21 @@ function QuestionEditor({
             </select>
           </Field>
         </div>
+
+        <Field label="מיומנות">
+          <select
+            value={draft.skill}
+            onChange={(event) => onDraftChange({ ...draft, skill: event.target.value })}
+            className="w-full px-4 py-3 rounded-xl"
+            style={inputStyle}
+          >
+            {getQuestionSkillsBySubject(draft.subject).map((skill) => (
+              <option key={skill.id} value={skill.id}>
+                {skill.label}
+              </option>
+            ))}
+          </select>
+        </Field>
 
         <Field label="רמת קושי">
           <select
@@ -807,6 +941,52 @@ function QuestionEditor({
         </div>
       </div>
     </aside>
+  );
+}
+
+function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-sm font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function TogglePillGroup({
+  options,
+  selected,
+  onChange,
+}: {
+  options: { id: string; label: string }[];
+  selected: string[];
+  onChange: (value: string[]) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = selected.includes(option.id);
+        return (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() =>
+              onChange(active ? selected.filter((value) => value !== option.id) : [...selected, option.id])
+            }
+            className="px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: active ? "var(--accent-primary)18" : "var(--bg-card)",
+              border: active ? "1px solid var(--accent-primary)" : "1px solid var(--border-subtle)",
+              color: active ? "var(--accent-primary)" : "var(--text-secondary)",
+            }}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

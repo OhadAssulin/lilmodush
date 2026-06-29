@@ -21,6 +21,7 @@ export const schemaStatements = [
     id TEXT PRIMARY KEY,
     subject TEXT NOT NULL CHECK (subject IN ('math', 'hebrew', 'science', 'knowledge')),
     question_type TEXT NOT NULL CHECK (question_type IN ('multiple_choice', 'open_input')),
+    skill TEXT NOT NULL,
     difficulty_score INTEGER NOT NULL CHECK (difficulty_score BETWEEN 1 AND 10),
     question TEXT NOT NULL,
     options JSONB,
@@ -31,12 +32,17 @@ export const schemaStatements = [
   )
   `,
   `
+  ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS skill TEXT NOT NULL DEFAULT 'addition_to_10'
+  `,
+  `
   CREATE TABLE IF NOT EXISTS question_attempts (
     id TEXT PRIMARY KEY,
     question_id TEXT NOT NULL,
     question_text TEXT NOT NULL,
     subject TEXT NOT NULL CHECK (subject IN ('math', 'hebrew', 'science', 'knowledge')),
     question_type TEXT NOT NULL CHECK (question_type IN ('multiple_choice', 'open_input')),
+    question_skill TEXT NOT NULL,
     difficulty_score INTEGER NOT NULL CHECK (difficulty_score BETWEEN 1 AND 10),
     child_id TEXT NOT NULL,
     child_name TEXT NOT NULL,
@@ -46,6 +52,10 @@ export const schemaStatements = [
     is_correct BOOLEAN NOT NULL,
     answered_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )
+  `,
+  `
+  ALTER TABLE question_attempts
+  ADD COLUMN IF NOT EXISTS question_skill TEXT NOT NULL DEFAULT 'addition_to_10'
   `,
   `
   CREATE TABLE IF NOT EXISTS assessment_reports (

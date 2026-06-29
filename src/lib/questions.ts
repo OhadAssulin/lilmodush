@@ -1,4 +1,8 @@
 import { Question, QuestionType, Subject } from "@/types";
+import {
+  defaultQuestionSkillBySubject,
+  isQuestionSkillForSubject,
+} from "@/lib/question-skills";
 
 export const QUESTION_BANK_STORAGE_KEY = "lilmodush_question_bank";
 
@@ -13,6 +17,7 @@ const mathQuestions: Question[] = [
     id: "math-1",
     subject: "math",
     type: "multiple_choice",
+    skill: "addition_to_10",
     difficultyScore: 2,
     question: "כמה זה 5 + 3?",
     options: ["6", "7", "8", "9"],
@@ -23,6 +28,7 @@ const mathQuestions: Question[] = [
     id: "math-2",
     subject: "math",
     type: "multiple_choice",
+    skill: "subtraction_to_10",
     difficultyScore: 2,
     question: "כמה זה 10 - 4?",
     options: ["4", "5", "6", "7"],
@@ -33,6 +39,7 @@ const mathQuestions: Question[] = [
     id: "math-3",
     subject: "math",
     type: "multiple_choice",
+    skill: "multiplication_as_repeated_addition",
     difficultyScore: 2,
     question: "כמה זה 2 × 3?",
     options: ["4", "5", "6", "7"],
@@ -43,6 +50,7 @@ const mathQuestions: Question[] = [
     id: "math-4",
     subject: "math",
     type: "multiple_choice",
+    skill: "addition_to_100_with_regrouping",
     difficultyScore: 5,
     question: "כמה זה 15 + 27?",
     options: ["42", "41", "43", "40"],
@@ -53,6 +61,7 @@ const mathQuestions: Question[] = [
     id: "math-5",
     subject: "math",
     type: "multiple_choice",
+    skill: "multiplication_table_to_5",
     difficultyScore: 5,
     question: "מה המספר שחסר? 4 × ___ = 20",
     options: ["4", "5", "6", "7"],
@@ -66,6 +75,7 @@ const hebrewQuestions: Question[] = [
     id: "hebrew-1",
     subject: "hebrew",
     type: "multiple_choice",
+    skill: "letter_recognition",
     difficultyScore: 2,
     question: "איזו אות באה אחרי ג׳?",
     options: ["ה", "ד", "ב", "ו"],
@@ -76,6 +86,7 @@ const hebrewQuestions: Question[] = [
     id: "hebrew-2",
     subject: "hebrew",
     type: "multiple_choice",
+    skill: "letter_recognition",
     difficultyScore: 2,
     question: "כמה אותיות יש בא״ב העברי?",
     options: ["24", "22", "26", "20"],
@@ -86,6 +97,7 @@ const hebrewQuestions: Question[] = [
     id: "hebrew-3",
     subject: "hebrew",
     type: "multiple_choice",
+    skill: "opening_closing_sound",
     difficultyScore: 2,
     question: "איזו מילה מתחילה באות ש׳?",
     options: ["כלב", "שמש", "בית", "עץ"],
@@ -96,6 +108,7 @@ const hebrewQuestions: Question[] = [
     id: "hebrew-4",
     subject: "hebrew",
     type: "multiple_choice",
+    skill: "antonyms",
     difficultyScore: 5,
     question: "מה ההפך של ׳גדול׳?",
     options: ["רחב", "קטן", "ארוך", "גבוה"],
@@ -106,6 +119,7 @@ const hebrewQuestions: Question[] = [
     id: "hebrew-5",
     subject: "hebrew",
     type: "multiple_choice",
+    skill: "vocabulary_context",
     difficultyScore: 5,
     question: "איזו מילה היא שם עצם?",
     options: ["רץ", "יפה", "ספר", "מהר"],
@@ -119,6 +133,7 @@ const scienceQuestions: Question[] = [
     id: "science-1",
     subject: "science",
     type: "multiple_choice",
+    skill: "plants",
     difficultyScore: 2,
     question: "מה צריכים צמחים כדי לגדול?",
     options: ["רק מים", "מים ואור שמש", "רק אדמה", "רק אוויר"],
@@ -129,6 +144,7 @@ const scienceQuestions: Question[] = [
     id: "science-2",
     subject: "science",
     type: "multiple_choice",
+    skill: "animals",
     difficultyScore: 2,
     question: "כמה רגליים יש לעכביש?",
     options: ["6", "8", "4", "10"],
@@ -139,6 +155,7 @@ const scienceQuestions: Question[] = [
     id: "science-3",
     subject: "science",
     type: "multiple_choice",
+    skill: "water_states",
     difficultyScore: 2,
     question: "מה קורה למים כשהם מתחממים מאוד?",
     options: ["הם קופאים", "הם הופכים לקיטור", "הם נעלמים", "כלום"],
@@ -149,6 +166,7 @@ const scienceQuestions: Question[] = [
     id: "science-4",
     subject: "science",
     type: "multiple_choice",
+    skill: "space",
     difficultyScore: 5,
     question: "מהו כוכב הלכת הקרוב ביותר לשמש?",
     options: ["נוגה", "מאדים", "כוכב חמה", "צדק"],
@@ -159,6 +177,7 @@ const scienceQuestions: Question[] = [
     id: "science-5",
     subject: "science",
     type: "multiple_choice",
+    skill: "weather",
     difficultyScore: 5,
     question: "מה גורם לקשת בענן?",
     options: ["עננים צבעוניים", "אור שמש וטיפות גשם", "רוח חזקה", "ברקים"],
@@ -172,6 +191,7 @@ const knowledgeQuestions: Question[] = [
     id: "knowledge-1",
     subject: "knowledge",
     type: "multiple_choice",
+    skill: "basic_geography",
     difficultyScore: 2,
     question: "מהי בירת ישראל?",
     options: ["תל אביב", "חיפה", "ירושלים", "באר שבע"],
@@ -182,6 +202,7 @@ const knowledgeQuestions: Question[] = [
     id: "knowledge-2",
     subject: "knowledge",
     type: "multiple_choice",
+    skill: "time_concepts",
     difficultyScore: 2,
     question: "כמה ימים יש בשבוע?",
     options: ["5", "6", "7", "8"],
@@ -192,6 +213,7 @@ const knowledgeQuestions: Question[] = [
     id: "knowledge-3",
     subject: "knowledge",
     type: "multiple_choice",
+    skill: "holidays",
     difficultyScore: 2,
     question: "איזה חג חוגגים בחודש תשרי?",
     options: ["פסח", "ראש השנה", "חנוכה", "פורים"],
@@ -202,6 +224,7 @@ const knowledgeQuestions: Question[] = [
     id: "knowledge-4",
     subject: "knowledge",
     type: "multiple_choice",
+    skill: "israel_symbols",
     difficultyScore: 5,
     question: "מה צבע הדגל של ישראל?",
     options: ["אדום ולבן", "כחול ולבן", "ירוק ולבן", "צהוב וכחול"],
@@ -212,6 +235,7 @@ const knowledgeQuestions: Question[] = [
     id: "knowledge-5",
     subject: "knowledge",
     type: "multiple_choice",
+    skill: "basic_geography",
     difficultyScore: 5,
     question: "איזה ים נמצא במערב ישראל?",
     options: ["ים המלח", "ים סוף", "הים התיכון", "ים כנרת"],
@@ -261,16 +285,25 @@ export function getQuestionBank(): Record<Subject, Question[]> {
 
 function normalizeQuestion(question: LegacyQuestion): Question {
   const options = question.options?.map((option) => option.trim()).filter(Boolean);
+  const subject = question.subject || "math";
   return {
-    id: question.id || createFallbackQuestionId(question.subject || "math"),
-    subject: question.subject || "math",
+    id: question.id || createFallbackQuestionId(subject),
+    subject,
     type: question.type || (options && options.length > 0 ? "multiple_choice" : "open_input"),
+    skill: normalizeQuestionSkill(question.skill, subject),
     difficultyScore: normalizeDifficultyScore(question.difficultyScore, question.difficulty),
     question: question.question || "",
     options: options && options.length > 0 ? options : undefined,
     correctAnswer: question.correctAnswer || "",
     explanation: question.explanation || undefined,
   };
+}
+
+function normalizeQuestionSkill(skill: Question["skill"] | undefined, subject: Subject): Question["skill"] {
+  if (skill && isQuestionSkillForSubject(skill, subject)) {
+    return skill;
+  }
+  return defaultQuestionSkillBySubject[subject];
 }
 
 function normalizeDifficultyScore(

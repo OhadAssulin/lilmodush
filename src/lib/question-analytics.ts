@@ -61,6 +61,7 @@ export function recordQuestionAttempt({
     questionText: question.question,
     subject: question.subject,
     questionType: question.type,
+    questionSkill: question.skill,
     difficultyScore: question.difficultyScore,
     childId: child.id,
     childName: child.name,
