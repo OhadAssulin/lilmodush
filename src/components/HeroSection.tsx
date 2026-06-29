@@ -192,8 +192,8 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <span style={{ color: "var(--text-primary)" }}>הילדים בקצב </span>
-          <span className="gradient-text">הנכון</span>
+          <span style={{ color: "var(--text-primary)" }}>חשבון, קריאה, הבנה </span>
+          <span className="gradient-text">— 20 דק׳ ביום</span>
         </motion.h1>
 
         {/* Subtitle */}
