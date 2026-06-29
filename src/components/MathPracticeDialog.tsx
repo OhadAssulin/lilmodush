@@ -25,18 +25,19 @@ const CloseIcon = () => (
   </svg>
 );
 
-const BackIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-
 const CheckIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
+
+const celebrationPieces = Array.from({ length: 30 }, (_, index) => ({
+  id: index,
+  left: `${(index * 29) % 100}%`,
+  duration: 3 + (index % 5) * 0.25,
+  delay: (index % 6) * 0.12,
+  symbol: ["🎉", "⭐", "🌟", "✨", "🎊", "💫", "🧮"][index % 7],
+}));
 
 export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps) {
   const [step, setStep] = useState<DialogStep>("grade");
@@ -53,15 +54,19 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
 
   useEffect(() => {
     if (!isOpen) {
-      setStep("grade");
-      setSelectedGrade(null);
-      setSelectedTopic(null);
-      setQuestions([]);
-      setCurrentQuestionIndex(0);
-      setUserAnswer("");
-      setShowResult(false);
-      setScore(0);
-      setTotalAnswered(0);
+      const timer = window.setTimeout(() => {
+        setStep("grade");
+        setSelectedGrade(null);
+        setSelectedTopic(null);
+        setQuestions([]);
+        setCurrentQuestionIndex(0);
+        setUserAnswer("");
+        setShowResult(false);
+        setScore(0);
+        setTotalAnswered(0);
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -80,7 +85,7 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
     setSelectedTopic(topic);
     if (selectedGrade) {
       const topicQuestions = getQuestionsByGradeAndTopic(selectedGrade.grade, topic);
-      const shuffled = [...topicQuestions].sort(() => Math.random() - 0.5);
+      const shuffled = shuffleQuestions(topicQuestions);
       setQuestions(shuffled);
       setCurrentQuestionIndex(0);
       setScore(0);
@@ -387,6 +392,14 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
                           ניקוד: {score}/{totalAnswered}
                         </span>
                       </div>
+                      <div className="flex justify-end mb-4">
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-semibold"
+                          style={{ background: "rgba(59, 130, 246, 0.12)", color: "#3b82f6" }}
+                        >
+                          רמת קושי {currentQuestion.difficultyScore}/10
+                        </span>
+                      </div>
 
                       {/* Progress bar */}
                       <div
@@ -606,7 +619,7 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
                             setTotalAnswered(0);
                             setUserAnswer("");
                             setShowResult(false);
-                            const shuffled = [...questions].sort(() => Math.random() - 0.5);
+                            const shuffled = shuffleQuestions(questions);
                             setQuestions(shuffled);
                             setStep("question");
                           }}
@@ -648,12 +661,12 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
           {/* Confetti for good score */}
           {step === "result" && score >= questions.length * 0.6 && (
             <div className="fixed inset-0 pointer-events-none z-[60]">
-              {Array.from({ length: 30 }).map((_, i) => (
+              {celebrationPieces.map((piece) => (
                 <motion.div
-                  key={i}
+                  key={piece.id}
                   className="absolute"
                   style={{
-                    left: `${Math.random() * 100}%`,
+                    left: piece.left,
                     top: "-20px",
                   }}
                   initial={{ y: -20, rotate: 0, opacity: 1 }}
@@ -663,13 +676,13 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
                     opacity: 0,
                   }}
                   transition={{
-                    duration: 3 + Math.random() * 2,
-                    delay: Math.random(),
+                    duration: piece.duration,
+                    delay: piece.delay,
                     ease: "easeIn",
                   }}
                 >
                   <span className="text-2xl">
-                    {["🎉", "⭐", "🌟", "✨", "🎊", "💫", "🧮"][i % 7]}
+                    {piece.symbol}
                   </span>
                 </motion.div>
               ))}
@@ -679,4 +692,22 @@ export function MathPracticeDialog({ isOpen, onClose }: MathPracticeDialogProps)
       )}
     </AnimatePresence>
   );
+}
+
+function shuffleQuestions(questions: MathQuestion[]): MathQuestion[] {
+  const nextQuestions = [...questions];
+  for (let index = nextQuestions.length - 1; index > 0; index -= 1) {
+    const swapIndex = getRandomIndex(index + 1);
+    [nextQuestions[index], nextQuestions[swapIndex]] = [nextQuestions[swapIndex], nextQuestions[index]];
+  }
+  return nextQuestions;
+}
+
+function getRandomIndex(maxExclusive: number): number {
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    const value = new Uint32Array(1);
+    crypto.getRandomValues(value);
+    return value[0] % maxExclusive;
+  }
+  return Date.now() % maxExclusive;
 }

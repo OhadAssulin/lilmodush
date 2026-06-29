@@ -18,8 +18,17 @@ const subjectColors: Record<Subject, string> = {
   knowledge: "var(--accent-knowledge)",
 };
 
+const confettiPieces = Array.from({ length: 20 }, (_, index) => ({
+  id: index,
+  color: ["#7c3aed", "#22d3ee", "#f472b6", "#fbbf24", "#10b981"][index % 5],
+  left: `${(index * 37) % 100}%`,
+  duration: 2 + (index % 4) * 0.2,
+  delay: (index % 5) * 0.08,
+}));
+
 export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }: QuizCardProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [inputAnswer, setInputAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
@@ -29,13 +38,14 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
     if (showResult) return;
 
     setSelectedAnswer(answer);
-    const correct = answer === question.correctAnswer;
+    const correct = normalizeAnswer(answer) === normalizeAnswer(question.correctAnswer);
     setIsCorrect(correct);
     setShowResult(true);
 
-    setTimeout(() => {
+    window.setTimeout(() => {
       onAnswer(answer, correct);
       setSelectedAnswer(null);
+      setInputAnswer("");
       setShowResult(false);
     }, 2000);
   };
@@ -57,7 +67,7 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
             className="text-sm font-medium px-3 py-1 rounded-full"
             style={{ background: `${subjectColor}20`, color: subjectColor }}
           >
-            {question.difficulty === "easy" ? "קל" : question.difficulty === "medium" ? "בינוני" : "קשה"}
+            רמת קושי {question.difficultyScore}/10
           </span>
         </div>
         <div
@@ -87,72 +97,118 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
         </h2>
 
         {/* Answer options */}
-        <div className="grid gap-4">
-          {question.options?.map((option, index) => {
-            const isSelected = selectedAnswer === option;
-            const isCorrectOption = option === question.correctAnswer;
-            const showCorrectness = showResult && (isSelected || isCorrectOption);
+        {question.type === "multiple_choice" && question.options && question.options.length > 0 ? (
+          <div className="grid gap-4">
+            {question.options.map((option, index) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrectOption =
+                normalizeAnswer(option) === normalizeAnswer(question.correctAnswer);
+              const showCorrectness = showResult && (isSelected || isCorrectOption);
 
-            let bgColor = "var(--bg-card)";
-            let borderColor = "var(--border-subtle)";
+              let bgColor = "var(--bg-card)";
+              let borderColor = "var(--border-subtle)";
 
-            if (showCorrectness) {
-              if (isCorrectOption) {
-                bgColor = "rgba(16, 185, 129, 0.15)";
-                borderColor = "var(--accent-success)";
-              } else if (isSelected && !isCorrectOption) {
-                bgColor = "rgba(239, 68, 68, 0.15)";
-                borderColor = "var(--accent-error)";
+              if (showCorrectness) {
+                if (isCorrectOption) {
+                  bgColor = "rgba(16, 185, 129, 0.15)";
+                  borderColor = "var(--accent-success)";
+                } else if (isSelected && !isCorrectOption) {
+                  bgColor = "rgba(239, 68, 68, 0.15)";
+                  borderColor = "var(--accent-error)";
+                }
+              } else if (isSelected) {
+                bgColor = `${subjectColor}15`;
+                borderColor = subjectColor;
               }
-            } else if (isSelected) {
-              bgColor = `${subjectColor}15`;
-              borderColor = subjectColor;
-            }
 
-            return (
-              <motion.button
-                key={option}
-                className="w-full p-5 rounded-2xl text-right text-lg font-medium transition-all"
-                style={{
-                  background: bgColor,
-                  border: `2px solid ${borderColor}`,
-                  color: "var(--text-primary)",
-                  fontFamily: "'Assistant', sans-serif",
-                }}
-                onClick={() => handleSelect(option)}
-                disabled={showResult}
-                whileHover={!showResult ? { scale: 1.02, x: -4 } : undefined}
-                whileTap={!showResult ? { scale: 0.98 } : undefined}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div className="flex items-center gap-4">
-                  <span
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
-                    style={{
-                      background: showCorrectness
-                        ? isCorrectOption
-                          ? "var(--accent-success)"
-                          : isSelected
-                          ? "var(--accent-error)"
-                          : `${subjectColor}20`
-                        : `${subjectColor}20`,
-                      color: showCorrectness
-                        ? isCorrectOption || isSelected
-                          ? "white"
-                          : subjectColor
-                        : subjectColor,
-                    }}
-                  >
-                    {showCorrectness && isCorrectOption ? "✓" : showCorrectness && isSelected && !isCorrectOption ? "✗" : String.fromCharCode(1488 + index)}
-                  </span>
-                  <span className="flex-1">{option}</span>
-                </div>
-              </motion.button>
-            );
-          })}
-        </div>
+              return (
+                <motion.button
+                  key={option}
+                  className="w-full p-5 rounded-2xl text-right text-lg font-medium transition-all"
+                  style={{
+                    background: bgColor,
+                    border: `2px solid ${borderColor}`,
+                    color: "var(--text-primary)",
+                    fontFamily: "'Assistant', sans-serif",
+                  }}
+                  onClick={() => handleSelect(option)}
+                  disabled={showResult}
+                  whileHover={!showResult ? { scale: 1.02, x: -4 } : undefined}
+                  whileTap={!showResult ? { scale: 0.98 } : undefined}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <div className="flex items-center gap-4">
+                    <span
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0"
+                      style={{
+                        background: showCorrectness
+                          ? isCorrectOption
+                            ? "var(--accent-success)"
+                            : isSelected
+                              ? "var(--accent-error)"
+                              : `${subjectColor}20`
+                          : `${subjectColor}20`,
+                        color: showCorrectness
+                          ? isCorrectOption || isSelected
+                            ? "white"
+                            : subjectColor
+                          : subjectColor,
+                      }}
+                    >
+                      {showCorrectness && isCorrectOption
+                        ? "✓"
+                        : showCorrectness && isSelected && !isCorrectOption
+                          ? "✗"
+                          : String.fromCharCode(1488 + index)}
+                    </span>
+                    <span className="flex-1">{option}</span>
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={inputAnswer}
+              onChange={(event) => setInputAnswer(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && inputAnswer.trim()) {
+                  handleSelect(inputAnswer.trim());
+                }
+              }}
+              disabled={showResult}
+              className="w-full px-5 py-4 rounded-2xl text-xl text-center"
+              style={{
+                background: "var(--bg-card)",
+                border: `2px solid ${selectedAnswer ? subjectColor : "var(--border-subtle)"}`,
+                color: "var(--text-primary)",
+                fontFamily: "'Rubik', sans-serif",
+              }}
+              placeholder="כתבו תשובה..."
+              dir="auto"
+            />
+            <motion.button
+              onClick={() => handleSelect(inputAnswer.trim())}
+              disabled={!inputAnswer.trim() || showResult}
+              className="w-full py-4 rounded-2xl text-lg font-semibold"
+              style={{
+                background: inputAnswer.trim()
+                  ? `linear-gradient(135deg, ${subjectColor}, #1d4ed8)`
+                  : "var(--bg-card)",
+                color: inputAnswer.trim() ? "white" : "var(--text-muted)",
+                fontFamily: "'Rubik', sans-serif",
+              }}
+              whileHover={inputAnswer.trim() && !showResult ? { scale: 1.02 } : undefined}
+              whileTap={inputAnswer.trim() && !showResult ? { scale: 0.98 } : undefined}
+            >
+              בדוק תשובה
+            </motion.button>
+          </div>
+        )}
       </div>
 
       {/* Result feedback */}
@@ -198,24 +254,24 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
       <AnimatePresence>
         {showResult && isCorrect && (
           <div className="fixed inset-0 pointer-events-none z-50">
-            {Array.from({ length: 20 }).map((_, i) => (
+            {confettiPieces.map((piece) => (
               <motion.div
-                key={i}
+                key={piece.id}
                 className="absolute w-3 h-3 rounded-sm"
                 style={{
-                  background: ["#7c3aed", "#22d3ee", "#f472b6", "#fbbf24", "#10b981"][i % 5],
-                  left: `${Math.random() * 100}%`,
+                  background: piece.color,
+                  left: piece.left,
                   top: "-20px",
                 }}
                 initial={{ y: -20, rotate: 0, opacity: 1 }}
                 animate={{
-                  y: window.innerHeight + 20,
+                  y: typeof window !== "undefined" ? window.innerHeight + 20 : 900,
                   rotate: 720,
                   opacity: 0,
                 }}
                 transition={{
-                  duration: 2 + Math.random(),
-                  delay: Math.random() * 0.5,
+                  duration: piece.duration,
+                  delay: piece.delay,
                   ease: "easeIn",
                 }}
               />
@@ -225,4 +281,8 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
       </AnimatePresence>
     </motion.div>
   );
+}
+
+function normalizeAnswer(answer: string): string {
+  return answer.trim().toLowerCase();
 }

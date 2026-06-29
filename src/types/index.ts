@@ -1,4 +1,5 @@
 export type Subject = "math" | "hebrew" | "science" | "knowledge";
+export type QuestionType = "multiple_choice" | "open_input";
 
 export interface Child {
   id: string;
@@ -19,7 +20,8 @@ export interface Parent {
 export interface Question {
   id: string;
   subject: Subject;
-  difficulty: "easy" | "medium" | "hard";
+  type: QuestionType;
+  difficultyScore: number;
   question: string;
   options?: string[];
   correctAnswer: string;
@@ -40,7 +42,8 @@ export interface QuestionAnalyticsAttempt {
   questionId: string;
   questionText: string;
   subject: Subject;
-  difficulty: Question["difficulty"];
+  questionType: QuestionType;
+  difficultyScore: number;
   childId: string;
   childName: string;
   parentUsername: string | null;

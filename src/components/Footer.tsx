@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -35,20 +36,20 @@ export function Footer() {
 
           {/* Links */}
           <div className="flex items-center gap-6">
-            <a
+            <Link
               href="/"
               className="text-sm transition-colors hover:text-[var(--accent-primary)]"
               style={{ color: "var(--text-secondary)" }}
             >
               דף הבית
-            </a>
-            <a
+            </Link>
+            <Link
               href="/parent"
               className="text-sm transition-colors hover:text-[var(--accent-primary)]"
               style={{ color: "var(--text-secondary)" }}
             >
               אזור הורים
-            </a>
+            </Link>
           </div>
 
           {/* Made with love */}

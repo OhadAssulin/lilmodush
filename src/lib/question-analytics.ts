@@ -60,7 +60,8 @@ export function recordQuestionAttempt({
     questionId: question.id,
     questionText: question.question,
     subject: question.subject,
-    difficulty: question.difficulty,
+    questionType: question.type,
+    difficultyScore: question.difficultyScore,
     childId: child.id,
     childName: child.name,
     parentUsername,
@@ -131,9 +132,13 @@ function buildAnswerBreakdown(
       answer,
       count: data.count,
       solvedCount: data.solvedCount,
-      isCorrectAnswer: answer === question.correctAnswer,
+      isCorrectAnswer: normalizeAnswer(answer) === normalizeAnswer(question.correctAnswer),
     }))
     .sort((a, b) => b.count - a.count || Number(b.isCorrectAnswer) - Number(a.isCorrectAnswer));
+}
+
+function normalizeAnswer(answer: string): string {
+  return answer.trim().toLowerCase();
 }
 
 function getGradeLabel(grade: 1 | 2 | 3 | null): string {

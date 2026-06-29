@@ -199,7 +199,7 @@ export function GiftedInfoDialog({ isOpen, onClose }: GiftedInfoDialogProps) {
                     { value: "20 דק׳", icon: "⏱️", label: "ביום" },
                     { value: "קצב", icon: "🎯", label: "משרד החינוך" },
                     { value: "יעד", icon: "💪", label: "מחוננים" },
-                  ].map((stat, i) => (
+                  ].map((stat) => (
                     <div
                       key={stat.value}
                       className="text-center p-3 rounded-xl"

@@ -14,10 +14,14 @@ import {
   resetQuestionBank,
   saveQuestionBank,
 } from "@/lib/questions";
-import { Child, Parent, Question, QuestionAnalyticsAttempt, Subject } from "@/types";
+import { Child, Parent, Question, QuestionAnalyticsAttempt, QuestionType, Subject } from "@/types";
 
 type AdminTab = "parents" | "children" | "problem-set";
 type QuestionDraft = Omit<Question, "options"> & { optionsText: string };
+type DatabaseStatus = {
+  configured: boolean;
+  provider: string;
+};
 
 const subjectOptions: { id: Subject; label: string; emoji: string; color: string }[] = [
   { id: "math", label: "חשבון", emoji: "🧮", color: "var(--accent-math)" },
@@ -26,12 +30,18 @@ const subjectOptions: { id: Subject; label: string; emoji: string; color: string
   { id: "knowledge", label: "ידע כללי", emoji: "🌍", color: "var(--accent-knowledge)" },
 ];
 
-const difficultyOptions: Question["difficulty"][] = ["easy", "medium", "hard"];
+const questionTypeOptions: { id: QuestionType; label: string }[] = [
+  { id: "multiple_choice", label: "אמריקאית" },
+  { id: "open_input", label: "פתוחה" },
+];
+
+const difficultyScoreOptions = Array.from({ length: 10 }, (_, index) => index + 1);
 
 const emptyDraft: QuestionDraft = {
   id: "",
   subject: "math",
-  difficulty: "easy",
+  type: "multiple_choice",
+  difficultyScore: 2,
   question: "",
   optionsText: "",
   correctAnswer: "",
@@ -47,12 +57,18 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestionDraft>(emptyDraft);
   const [analyticsAttempts, setAnalyticsAttempts] = useState<QuestionAnalyticsAttempt[]>([]);
+  const [databaseStatus, setDatabaseStatus] = useState<DatabaseStatus | null>(null);
+  const [databaseMessage, setDatabaseMessage] = useState("");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setParents(getAllParents());
       setQuestionBank(getQuestionBank());
       setAnalyticsAttempts(getQuestionAnalytics());
+      fetch("/api/admin/db/status")
+        .then((response) => response.json() as Promise<DatabaseStatus>)
+        .then(setDatabaseStatus)
+        .catch(() => setDatabaseStatus({ configured: false, provider: "neon-postgres" }));
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -125,12 +141,24 @@ export default function AdminPage() {
       .split("\n")
       .map((option) => option.trim())
       .filter(Boolean);
+
+    if (draft.type === "multiple_choice" && options.length < 2) {
+      window.alert("בשאלה אמריקאית צריך להזין לפחות שתי אפשרויות תשובה.");
+      return;
+    }
+
+    if (draft.type === "multiple_choice" && !options.includes(draft.correctAnswer.trim())) {
+      window.alert("בשאלה אמריקאית התשובה הנכונה צריכה להופיע ברשימת האפשרויות.");
+      return;
+    }
+
     const nextQuestion: Question = {
       id: draft.id.trim() || createQuestionId(draft.subject),
       subject: draft.subject,
-      difficulty: draft.difficulty,
+      type: draft.type,
+      difficultyScore: clampDifficultyScore(draft.difficultyScore),
       question: draft.question.trim(),
-      options: options.length > 0 ? options : undefined,
+      options: draft.type === "multiple_choice" ? options : undefined,
       correctAnswer: draft.correctAnswer.trim(),
       explanation: draft.explanation?.trim() || undefined,
     };
@@ -169,6 +197,21 @@ export default function AdminPage() {
     cancelEdit();
   };
 
+  const initializeDatabase = async () => {
+    setDatabaseMessage("מאתחל סכימה...");
+    try {
+      const response = await fetch("/api/admin/db/init", { method: "POST" });
+      const data = (await response.json()) as { initialized?: boolean; statements?: number; error?: string };
+      if (!response.ok || !data.initialized) {
+        setDatabaseMessage(data.error || "אתחול בסיס הנתונים נכשל.");
+        return;
+      }
+      setDatabaseMessage(`סכימת בסיס הנתונים מוכנה (${data.statements || 0} פעולות).`);
+    } catch {
+      setDatabaseMessage("לא ניתן להתחבר לנתיב אתחול בסיס הנתונים.");
+    }
+  };
+
   return (
     <main className="relative min-h-screen gradient-mesh grid-pattern">
       <Header />
@@ -191,6 +234,36 @@ export default function AdminPage() {
             <p className="text-lg max-w-3xl" style={{ color: "var(--text-secondary)" }}>
               צפייה בהורים וילדים, וניהול מאגר השאלות המקומי שמשמש את חידוני הילדים.
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span
+                className="px-3 py-2 rounded-xl text-sm font-semibold"
+                style={{
+                  background: databaseStatus?.configured
+                    ? "rgba(16, 185, 129, 0.12)"
+                    : "rgba(245, 158, 11, 0.12)",
+                  color: databaseStatus?.configured ? "var(--accent-success)" : "#f59e0b",
+                }}
+              >
+                DB: {databaseStatus?.configured ? "מוגדר" : "לא מוגדר"}
+              </span>
+              <button
+                onClick={initializeDatabase}
+                disabled={!databaseStatus?.configured}
+                className="px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{
+                  ...secondaryButtonStyle,
+                  opacity: databaseStatus?.configured ? 1 : 0.55,
+                  cursor: databaseStatus?.configured ? "pointer" : "not-allowed",
+                }}
+              >
+                אתחל סכימת DB
+              </button>
+              {databaseMessage && (
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  {databaseMessage}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
@@ -496,7 +569,10 @@ function QuestionRow({
               {subject?.emoji} {subject?.label}
             </span>
             <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
-              {question.difficulty}
+              {getQuestionTypeLabel(question.type)}
+            </span>
+            <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
+              קושי {question.difficultyScore}/10
             </span>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
               {question.id}
@@ -593,7 +669,7 @@ function QuestionEditor({
         {editingId ? "עריכת שאלה" : "שאלה חדשה"}
       </h2>
       <p className="text-sm mb-5" style={{ color: "var(--text-muted)" }}>
-        אפשרויות תשובה נכתבות בשורות נפרדות. אם משאירים ריק, זו שאלה פתוחה.
+        בחר סוג שאלה, רמת קושי 1-10, ואז הזן תשובה נכונה ופתרון.
       </p>
 
       <div className="space-y-3">
@@ -621,21 +697,38 @@ function QuestionEditor({
               ))}
             </select>
           </Field>
-          <Field label="רמה">
+          <Field label="סוג">
             <select
-              value={draft.difficulty}
-              onChange={(event) => onDraftChange({ ...draft, difficulty: event.target.value as Question["difficulty"] })}
+              value={draft.type}
+              onChange={(event) => onDraftChange({ ...draft, type: event.target.value as QuestionType })}
               className="w-full px-4 py-3 rounded-xl"
               style={inputStyle}
             >
-              {difficultyOptions.map((difficulty) => (
-                <option key={difficulty} value={difficulty}>
-                  {difficulty}
+              {questionTypeOptions.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.label}
                 </option>
               ))}
             </select>
           </Field>
         </div>
+
+        <Field label="רמת קושי">
+          <select
+            value={draft.difficultyScore}
+            onChange={(event) =>
+              onDraftChange({ ...draft, difficultyScore: Number(event.target.value) })
+            }
+            className="w-full px-4 py-3 rounded-xl"
+            style={inputStyle}
+          >
+            {difficultyScoreOptions.map((score) => (
+              <option key={score} value={score}>
+                {score}/10
+              </option>
+            ))}
+          </select>
+        </Field>
 
         <Field label="שאלה">
           <textarea
@@ -646,13 +739,14 @@ function QuestionEditor({
           />
         </Field>
 
-        <Field label="אפשרויות">
+        <Field label={draft.type === "multiple_choice" ? "אפשרויות" : "אפשרויות (לא נדרש בשאלה פתוחה)"}>
           <textarea
             value={draft.optionsText}
             onChange={(event) => onDraftChange({ ...draft, optionsText: event.target.value })}
             className="w-full px-4 py-3 rounded-xl min-h-24"
             style={inputStyle}
             placeholder="אפשרות א׳&#10;אפשרות ב׳&#10;אפשרות ג׳"
+            disabled={draft.type === "open_input"}
           />
         </Field>
 
@@ -760,6 +854,15 @@ function createQuestionId(subject: Subject): string {
     return `${subject}-${crypto.randomUUID().slice(0, 8)}`;
   }
   return `${subject}-${Date.now()}`;
+}
+
+function getQuestionTypeLabel(type: QuestionType): string {
+  return questionTypeOptions.find((item) => item.id === type)?.label || type;
+}
+
+function clampDifficultyScore(value: number): number {
+  if (!Number.isFinite(value)) return 2;
+  return Math.min(10, Math.max(1, Math.round(value)));
 }
 
 function getSubjectLabel(subject: Subject): string {

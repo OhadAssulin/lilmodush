@@ -12,7 +12,7 @@ export interface MathQuestion {
   options?: string[];
   answer: string;
   accepted_answers?: string[];
-  difficulty: "easy" | "medium" | "hard";
+  difficultyScore: number;
 }
 
 export interface GradeInfo {
@@ -43,7 +43,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה תפוחים יש אם ספרנו: 🍎🍎🍎🍎🍎?",
     type: "open_input",
     answer: "5",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-002",
@@ -55,7 +55,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 4 + 3?",
     type: "open_input",
     answer: "7",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-003",
@@ -67,7 +67,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "לדנה היו 9 מדבקות. היא נתנה 2. כמה נשארו?",
     type: "open_input",
     answer: "7",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-004",
@@ -80,7 +80,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["12", "13", "15", "16"],
     type: "multiple_choice",
     answer: "15",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-005",
@@ -92,7 +92,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "מה גדול יותר: 8 או 5?",
     type: "open_input",
     answer: "8",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-006",
@@ -104,7 +104,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה כוכבים יש? ⭐⭐⭐⭐⭐⭐⭐",
     type: "open_input",
     answer: "7",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-007",
@@ -116,7 +116,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 6 + 5?",
     type: "open_input",
     answer: "11",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g1-008",
@@ -129,7 +129,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["8", "9", "11", "12"],
     type: "multiple_choice",
     answer: "9",
-    difficulty: "easy"
+    difficultyScore: 2
   },
 
   // Grade 2
@@ -143,7 +143,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 23 + 14?",
     type: "open_input",
     answer: "37",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g2-002",
@@ -155,7 +155,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 48 − 16?",
     type: "open_input",
     answer: "32",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g2-003",
@@ -168,7 +168,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["7", "12", "14", "16"],
     type: "multiple_choice",
     answer: "12",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g2-004",
@@ -181,7 +181,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["זוגי", "אי־זוגי"],
     type: "multiple_choice",
     answer: "אי־זוגי",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g2-005",
@@ -193,7 +193,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "יש לך 10 שקלים וקנית משהו ב־6 שקלים. כמה עודף תקבל?",
     type: "open_input",
     answer: "4",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g2-006",
@@ -205,7 +205,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 35 + 28?",
     type: "open_input",
     answer: "63",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g2-007",
@@ -218,7 +218,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["זוגי", "אי־זוגי"],
     type: "multiple_choice",
     answer: "זוגי",
-    difficulty: "easy"
+    difficultyScore: 2
   },
 
   // Grade 3
@@ -232,7 +232,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 7 × 8?",
     type: "open_input",
     answer: "56",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g3-002",
@@ -244,7 +244,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 36 ÷ 6?",
     type: "open_input",
     answer: "6",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g3-003",
@@ -256,7 +256,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "בכל קופסה יש 5 עפרונות. יש 4 קופסאות. כמה עפרונות יש?",
     type: "open_input",
     answer: "20",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g3-004",
@@ -269,7 +269,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["1/2", "1/4", "1/8"],
     type: "multiple_choice",
     answer: "1/2",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g3-005",
@@ -281,7 +281,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 5 + 3 × 2?",
     type: "open_input",
     answer: "11",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g3-006",
@@ -293,7 +293,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 9 × 6?",
     type: "open_input",
     answer: "54",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g3-007",
@@ -305,7 +305,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 42 ÷ 7?",
     type: "open_input",
     answer: "6",
-    difficulty: "easy"
+    difficultyScore: 2
   },
 
   // Grade 4
@@ -320,7 +320,7 @@ export const mathQuestions: MathQuestion[] = [
     type: "open_input",
     answer: "1623",
     accepted_answers: ["1623", "1,623"],
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g4-002",
@@ -332,7 +332,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 24 × 3?",
     type: "open_input",
     answer: "72",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g4-003",
@@ -345,7 +345,7 @@ export const mathQuestions: MathQuestion[] = [
     type: "open_input",
     answer: "5 שארית 4",
     accepted_answers: ["5 שארית 4", "5r4", "5 r 4"],
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g4-004",
@@ -358,7 +358,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["2/3", "2/4", "3/5", "4/6"],
     type: "multiple_choice",
     answer: "2/4",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g4-005",
@@ -370,7 +370,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "מלבן באורך 6 וברוחב 3. מה ההיקף?",
     type: "open_input",
     answer: "18",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g4-006",
@@ -382,7 +382,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 15 × 4?",
     type: "open_input",
     answer: "60",
-    difficulty: "easy"
+    difficultyScore: 2
   },
 
   // Grade 5
@@ -397,7 +397,7 @@ export const mathQuestions: MathQuestion[] = [
     type: "open_input",
     answer: "3/4",
     accepted_answers: ["3/4", "0.75"],
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g5-002",
@@ -409,7 +409,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 1/2 × 8?",
     type: "open_input",
     answer: "4",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g5-003",
@@ -421,7 +421,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 3.5 + 2.25?",
     type: "open_input",
     answer: "5.75",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g5-004",
@@ -434,7 +434,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["4", "8", "10", "18"],
     type: "multiple_choice",
     answer: "8",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g5-005",
@@ -446,7 +446,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "מלבן באורך 7 וברוחב 4. מה השטח?",
     type: "open_input",
     answer: "28",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g5-006",
@@ -458,7 +458,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 4.8 - 1.3?",
     type: "open_input",
     answer: "3.5",
-    difficulty: "medium"
+    difficultyScore: 5
   },
 
   // Grade 6
@@ -472,7 +472,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה הם 25% מתוך 120?",
     type: "open_input",
     answer: "30",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g6-002",
@@ -484,7 +484,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "היחס בין בנים לבנות הוא 2:3. אם יש 10 בנים, כמה בנות יש?",
     type: "open_input",
     answer: "15",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g6-003",
@@ -497,7 +497,7 @@ export const mathQuestions: MathQuestion[] = [
     options: ["0.75", "2/3"],
     type: "multiple_choice",
     answer: "0.75",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g6-004",
@@ -509,7 +509,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה זה 18 − 4 × 3 + 2?",
     type: "open_input",
     answer: "8",
-    difficulty: "medium"
+    difficultyScore: 5
   },
   {
     id: "math-g6-005",
@@ -521,7 +521,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "הציונים הם 80, 90, 100. מה הממוצע?",
     type: "open_input",
     answer: "90",
-    difficulty: "easy"
+    difficultyScore: 2
   },
   {
     id: "math-g6-006",
@@ -533,7 +533,7 @@ export const mathQuestions: MathQuestion[] = [
     question: "כמה הם 50% מתוך 64?",
     type: "open_input",
     answer: "32",
-    difficulty: "easy"
+    difficultyScore: 2
   },
 ];
 
