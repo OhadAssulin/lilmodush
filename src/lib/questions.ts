@@ -3,6 +3,7 @@ import {
   defaultQuestionSkillBySubject,
   isQuestionSkillForSubject,
 } from "@/lib/question-skills";
+import { importedQuestionBank } from "@/lib/imported-question-bank";
 
 export const QUESTION_BANK_STORAGE_KEY = "lilmodush_question_bank";
 
@@ -245,10 +246,10 @@ const knowledgeQuestions: Question[] = [
 ];
 
 export const defaultQuestionBank: Record<Subject, Question[]> = {
-  math: mathQuestions,
-  hebrew: hebrewQuestions,
-  science: scienceQuestions,
-  knowledge: knowledgeQuestions,
+  math: [...mathQuestions, ...importedQuestionBank.math],
+  hebrew: [...hebrewQuestions, ...importedQuestionBank.hebrew],
+  science: [...scienceQuestions, ...importedQuestionBank.science],
+  knowledge: [...knowledgeQuestions, ...importedQuestionBank.knowledge],
 };
 
 function cloneQuestionBank(bank: Record<Subject, Question[]>): Record<Subject, Question[]> {
@@ -272,12 +273,12 @@ export function getQuestionBank(): Record<Subject, Question[]> {
 
   try {
     const parsed = JSON.parse(stored) as Partial<Record<Subject, LegacyQuestion[]>>;
-    return {
+    return mergeMissingDefaultQuestions({
       math: (parsed.math || []).map((question) => normalizeQuestion({ ...question, subject: "math" })),
       hebrew: (parsed.hebrew || []).map((question) => normalizeQuestion({ ...question, subject: "hebrew" })),
       science: (parsed.science || []).map((question) => normalizeQuestion({ ...question, subject: "science" })),
       knowledge: (parsed.knowledge || []).map((question) => normalizeQuestion({ ...question, subject: "knowledge" })),
-    };
+    });
   } catch {
     return cloneQuestionBank(defaultQuestionBank);
   }
@@ -289,14 +290,55 @@ function normalizeQuestion(question: LegacyQuestion): Question {
   return {
     id: question.id || createFallbackQuestionId(subject),
     subject,
-    type: question.type || (options && options.length > 0 ? "multiple_choice" : "open_input"),
+    type: normalizeQuestionType(question.type, options),
     skill: normalizeQuestionSkill(question.skill, subject),
+    grade: normalizeGrade(question.grade),
     difficultyScore: normalizeDifficultyScore(question.difficultyScore, question.difficulty),
     question: question.question || "",
     options: options && options.length > 0 ? options : undefined,
     correctAnswer: question.correctAnswer || "",
+    acceptableAnswers: question.acceptableAnswers?.map((answer) => answer.trim()).filter(Boolean),
     explanation: question.explanation || undefined,
+    rubric: question.rubric || undefined,
+    tags: question.tags?.map((tag) => tag.trim()).filter(Boolean),
+    maxPoints: question.maxPoints,
+    readAloudAllowed: question.readAloudAllowed,
+    giftedPathRelevant: question.giftedPathRelevant,
   };
+}
+
+function mergeMissingDefaultQuestions(bank: Record<Subject, Question[]>): Record<Subject, Question[]> {
+  const defaults = cloneQuestionBank(defaultQuestionBank);
+  return {
+    math: mergeSubjectQuestions(bank.math, defaults.math),
+    hebrew: mergeSubjectQuestions(bank.hebrew, defaults.hebrew),
+    science: mergeSubjectQuestions(bank.science, defaults.science),
+    knowledge: mergeSubjectQuestions(bank.knowledge, defaults.knowledge),
+  };
+}
+
+function mergeSubjectQuestions(storedQuestions: Question[], defaultQuestions: Question[]): Question[] {
+  const storedIds = new Set(storedQuestions.map((question) => question.id));
+  return [
+    ...storedQuestions,
+    ...defaultQuestions.filter((question) => !storedIds.has(question.id)),
+  ];
+}
+
+function normalizeQuestionType(
+  type: QuestionType | undefined,
+  options: string[] | undefined
+): QuestionType {
+  if (
+    type === "multiple_choice" ||
+    type === "open_input" ||
+    type === "ordering" ||
+    type === "oral_reading" ||
+    type === "writing_prompt"
+  ) {
+    return type;
+  }
+  return options && options.length > 0 ? "multiple_choice" : "open_input";
 }
 
 function normalizeQuestionSkill(skill: Question["skill"] | undefined, subject: Subject): Question["skill"] {
@@ -317,6 +359,13 @@ function normalizeDifficultyScore(
   if (legacyDifficulty === "hard") return 8;
   if (legacyDifficulty === "medium") return 5;
   return 2;
+}
+
+function normalizeGrade(value: Question["grade"] | undefined): Question["grade"] | undefined {
+  if (value === 1 || value === 2 || value === 3) {
+    return value;
+  }
+  return undefined;
 }
 
 function createFallbackQuestionId(subject: Subject): string {
@@ -350,7 +399,13 @@ export function getRandomQuestion(subject: Subject): Question {
 }
 
 export function checkAnswer(question: Question, answer: string): boolean {
-  return question.correctAnswer.trim().toLowerCase() === answer.trim().toLowerCase();
+  const acceptedAnswers = [question.correctAnswer, ...(question.acceptableAnswers || [])];
+  const normalizedAnswer = normalizeAnswer(answer);
+  return acceptedAnswers.some((acceptedAnswer) => normalizeAnswer(acceptedAnswer) === normalizedAnswer);
+}
+
+function normalizeAnswer(answer: string): string {
+  return answer.trim().toLowerCase().replace(/\s*,\s*/g, ", ");
 }
 
 function shuffleQuestions(questions: Question[]): Question[] {

@@ -133,13 +133,19 @@ function buildAnswerBreakdown(
       answer,
       count: data.count,
       solvedCount: data.solvedCount,
-      isCorrectAnswer: normalizeAnswer(answer) === normalizeAnswer(question.correctAnswer),
+      isCorrectAnswer: getAcceptedAnswers(question).some(
+        (acceptedAnswer) => normalizeAnswer(answer) === normalizeAnswer(acceptedAnswer)
+      ),
     }))
     .sort((a, b) => b.count - a.count || Number(b.isCorrectAnswer) - Number(a.isCorrectAnswer));
 }
 
 function normalizeAnswer(answer: string): string {
-  return answer.trim().toLowerCase();
+  return answer.trim().toLowerCase().replace(/\s*,\s*/g, ", ");
+}
+
+function getAcceptedAnswers(question: Question): string[] {
+  return [question.correctAnswer, ...(question.acceptableAnswers || [])];
 }
 
 function getGradeLabel(grade: 1 | 2 | 3 | null): string {

@@ -33,12 +33,25 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
   const [isCorrect, setIsCorrect] = useState(false);
 
   const subjectColor = subjectColors[question.subject];
+  const isPracticeOnly = question.type === "oral_reading" || question.type === "writing_prompt";
+  const answerPlaceholder =
+    question.type === "ordering"
+      ? "לדוגמה: 9, 12, 15"
+      : question.type === "writing_prompt"
+        ? "כתבו כאן..."
+        : question.type === "oral_reading"
+          ? "כתבו שסיימתם לקרוא"
+          : "כתבו תשובה...";
 
   const handleSelect = (answer: string) => {
     if (showResult) return;
 
     setSelectedAnswer(answer);
-    const correct = normalizeAnswer(answer) === normalizeAnswer(question.correctAnswer);
+    const correct =
+      isPracticeOnly ||
+      getAcceptedAnswers(question).some(
+        (acceptedAnswer) => normalizeAnswer(answer) === normalizeAnswer(acceptedAnswer)
+      );
     setIsCorrect(correct);
     setShowResult(true);
 
@@ -102,7 +115,9 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
             {question.options.map((option, index) => {
               const isSelected = selectedAnswer === option;
               const isCorrectOption =
-                normalizeAnswer(option) === normalizeAnswer(question.correctAnswer);
+                getAcceptedAnswers(question).some(
+                  (acceptedAnswer) => normalizeAnswer(option) === normalizeAnswer(acceptedAnswer)
+                );
               const showCorrectness = showResult && (isSelected || isCorrectOption);
 
               let bgColor = "var(--bg-card)";
@@ -171,24 +186,29 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
           </div>
         ) : (
           <div className="space-y-4">
-            <input
-              type="text"
+            {question.rubric && (
+              <p className="text-sm text-center" style={{ color: "var(--text-muted)" }}>
+                {question.rubric}
+              </p>
+            )}
+            <textarea
               value={inputAnswer}
               onChange={(event) => setInputAnswer(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && inputAnswer.trim()) {
+                if (event.key === "Enter" && !event.shiftKey && inputAnswer.trim()) {
+                  event.preventDefault();
                   handleSelect(inputAnswer.trim());
                 }
               }}
               disabled={showResult}
-              className="w-full px-5 py-4 rounded-2xl text-xl text-center"
+              className="w-full px-5 py-4 rounded-2xl text-xl text-center min-h-24"
               style={{
                 background: "var(--bg-card)",
                 border: `2px solid ${selectedAnswer ? subjectColor : "var(--border-subtle)"}`,
                 color: "var(--text-primary)",
                 fontFamily: "'Rubik', sans-serif",
               }}
-              placeholder="כתבו תשובה..."
+              placeholder={answerPlaceholder}
               dir="auto"
             />
             <motion.button
@@ -236,7 +256,7 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
                 fontFamily: "'Rubik', sans-serif",
               }}
             >
-              {isCorrect ? "כל הכבוד!" : "לא נורא, ננסה שוב!"}
+              {isPracticeOnly ? "נרשם לתרגול!" : isCorrect ? "כל הכבוד!" : "לא נורא, ננסה שוב!"}
             </h3>
             {question.explanation && (
               <p
@@ -284,5 +304,9 @@ export function QuizCard({ question, onAnswer, questionNumber, totalQuestions }:
 }
 
 function normalizeAnswer(answer: string): string {
-  return answer.trim().toLowerCase();
+  return answer.trim().toLowerCase().replace(/\s*,\s*/g, ", ");
+}
+
+function getAcceptedAnswers(question: Question): string[] {
+  return [question.correctAnswer, ...(question.acceptableAnswers || [])];
 }

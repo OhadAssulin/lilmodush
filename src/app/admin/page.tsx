@@ -21,7 +21,7 @@ import {
   isQuestionSkillForSubject,
   questionSkillOptions,
 } from "@/lib/question-skills";
-import { Child, Parent, Question, QuestionAnalyticsAttempt, QuestionSkill, QuestionType, Subject } from "@/types";
+import { Child, Grade, Parent, Question, QuestionAnalyticsAttempt, QuestionSkill, QuestionType, Subject } from "@/types";
 
 type AdminTab = "parents" | "children" | "problem-set";
 type QuestionDraft = Omit<Question, "options"> & { optionsText: string };
@@ -29,6 +29,7 @@ type ProblemSetFilters = {
   subjects: Subject[];
   questionTypes: QuestionType[];
   skills: QuestionSkill[];
+  grades: Grade[];
   difficultyScores: number[];
 };
 type FilterAnalyticsSummary = {
@@ -75,6 +76,15 @@ const subjectOptions: { id: Subject; label: string; emoji: string; color: string
 const questionTypeOptions: { id: QuestionType; label: string }[] = [
   { id: "multiple_choice", label: "אמריקאית" },
   { id: "open_input", label: "פתוחה" },
+  { id: "ordering", label: "סידור" },
+  { id: "oral_reading", label: "קריאה בקול" },
+  { id: "writing_prompt", label: "כתיבה" },
+];
+
+const gradeOptions: { id: Grade; label: string }[] = [
+  { id: 1, label: "כיתה א׳" },
+  { id: 2, label: "כיתה ב׳" },
+  { id: 3, label: "כיתה ג׳" },
 ];
 
 const difficultyScoreOptions = Array.from({ length: 10 }, (_, index) => index + 1);
@@ -84,6 +94,7 @@ const emptyDraft: QuestionDraft = {
   subject: "math",
   type: "multiple_choice",
   skill: defaultQuestionSkillBySubject.math,
+  grade: undefined,
   difficultyScore: 2,
   question: "",
   optionsText: "",
@@ -100,6 +111,7 @@ export default function AdminPage() {
     subjects: [],
     questionTypes: [],
     skills: [],
+    grades: [],
     difficultyScores: [],
   });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -144,6 +156,8 @@ export default function AdminPage() {
       const matchesQuestionType =
         filters.questionTypes.length === 0 || filters.questionTypes.includes(question.type);
       const matchesSkill = filters.skills.length === 0 || filters.skills.includes(question.skill);
+      const matchesGrade =
+        filters.grades.length === 0 || (question.grade && filters.grades.includes(question.grade));
       const matchesDifficulty =
         filters.difficultyScores.length === 0 ||
         filters.difficultyScores.includes(question.difficultyScore);
@@ -154,7 +168,7 @@ export default function AdminPage() {
         question.id.toLowerCase().includes(normalizedSearch) ||
         getQuestionSkillLabel(question.skill).toLowerCase().includes(normalizedSearch);
 
-      return matchesSubject && matchesQuestionType && matchesSkill && matchesDifficulty && matchesSearch;
+      return matchesSubject && matchesQuestionType && matchesSkill && matchesGrade && matchesDifficulty && matchesSearch;
     });
   }, [filters, questions, search]);
 
@@ -215,11 +229,18 @@ export default function AdminPage() {
       skill: isQuestionSkillForSubject(draft.skill, draft.subject)
         ? draft.skill
         : defaultQuestionSkillBySubject[draft.subject],
+      grade: draft.grade,
       difficultyScore: clampDifficultyScore(draft.difficultyScore),
       question: draft.question.trim(),
       options: draft.type === "multiple_choice" ? options : undefined,
       correctAnswer: draft.correctAnswer.trim(),
+      acceptableAnswers: draft.acceptableAnswers?.map((answer) => answer.trim()).filter(Boolean),
       explanation: draft.explanation?.trim() || undefined,
+      rubric: draft.rubric?.trim() || undefined,
+      tags: draft.tags?.map((tag) => tag.trim()).filter(Boolean),
+      maxPoints: draft.maxPoints,
+      readAloudAllowed: draft.readAloudAllowed,
+      giftedPathRelevant: draft.giftedPathRelevant,
     };
 
     const nextBank: Record<Subject, Question[]> = {
@@ -572,6 +593,7 @@ function ProblemSetView({
     filters.subjects.length > 0 ||
     filters.questionTypes.length > 0 ||
     filters.skills.length > 0 ||
+    filters.grades.length > 0 ||
     filters.difficultyScores.length > 0 ||
     search.trim().length > 0;
 
@@ -633,7 +655,7 @@ function ProblemSetView({
                 <button
                   onClick={() => {
                     onSearchChange("");
-                    onFiltersChange({ subjects: [], questionTypes: [], skills: [], difficultyScores: [] });
+                    onFiltersChange({ subjects: [], questionTypes: [], skills: [], grades: [], difficultyScores: [] });
                   }}
                   className="px-3 py-2 rounded-xl text-sm font-semibold"
                   style={secondaryButtonStyle}
@@ -659,6 +681,14 @@ function ProblemSetView({
                   options={questionTypeOptions.map((type) => ({ id: type.id, label: type.label }))}
                   selected={filters.questionTypes}
                   onChange={(value) => updateFilters("questionTypes", value as QuestionType[])}
+                />
+              </FilterGroup>
+
+              <FilterGroup title="כיתה">
+                <TogglePillGroup
+                  options={gradeOptions.map((grade) => ({ id: grade.id.toString(), label: grade.label }))}
+                  selected={filters.grades.map(String)}
+                  onChange={(value) => updateFilters("grades", value.map(Number) as Grade[])}
                 />
               </FilterGroup>
 
@@ -738,6 +768,11 @@ function QuestionRow({
             <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
               {getQuestionSkillLabel(question.skill)}
             </span>
+            {question.grade && (
+              <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
+                {getGradeLabel(question.grade)}
+              </span>
+            )}
             <span className="px-2 py-1 rounded-lg text-xs" style={{ background: "var(--bg-card)", color: "var(--text-muted)" }}>
               קושי {question.difficultyScore}/10
             </span>
@@ -756,6 +791,11 @@ function QuestionRow({
           <p className="text-sm" style={{ color: "var(--accent-success)" }}>
             תשובה: {question.correctAnswer}
           </p>
+          {question.rubric && (
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+              מחוון: {question.rubric}
+            </p>
+          )}
           {question.explanation && (
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
               פתרון: {question.explanation}
@@ -904,22 +944,45 @@ function QuestionEditor({
           </select>
         </Field>
 
-        <Field label="רמת קושי">
-          <select
-            value={draft.difficultyScore}
-            onChange={(event) =>
-              onDraftChange({ ...draft, difficultyScore: Number(event.target.value) })
-            }
-            className="w-full px-4 py-3 rounded-xl"
-            style={inputStyle}
-          >
-            {difficultyScoreOptions.map((score) => (
-              <option key={score} value={score}>
-                {score}/10
-              </option>
-            ))}
-          </select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="כיתה">
+            <select
+              value={draft.grade || ""}
+              onChange={(event) =>
+                onDraftChange({
+                  ...draft,
+                  grade: event.target.value ? (Number(event.target.value) as Grade) : undefined,
+                })
+              }
+              className="w-full px-4 py-3 rounded-xl"
+              style={inputStyle}
+            >
+              <option value="">לא מסווג</option>
+              {gradeOptions.map((grade) => (
+                <option key={grade.id} value={grade.id}>
+                  {grade.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="רמת קושי">
+            <select
+              value={draft.difficultyScore}
+              onChange={(event) =>
+                onDraftChange({ ...draft, difficultyScore: Number(event.target.value) })
+              }
+              className="w-full px-4 py-3 rounded-xl"
+              style={inputStyle}
+            >
+              {difficultyScoreOptions.map((score) => (
+                <option key={score} value={score}>
+                  {score}/10
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
 
         <Field label="שאלה">
           <textarea
@@ -930,14 +993,14 @@ function QuestionEditor({
           />
         </Field>
 
-        <Field label={draft.type === "multiple_choice" ? "אפשרויות" : "אפשרויות (לא נדרש בשאלה פתוחה)"}>
+        <Field label={draft.type === "multiple_choice" ? "אפשרויות" : "אפשרויות (רק בשאלה אמריקאית)"}>
           <textarea
             value={draft.optionsText}
             onChange={(event) => onDraftChange({ ...draft, optionsText: event.target.value })}
             className="w-full px-4 py-3 rounded-xl min-h-24"
             style={inputStyle}
             placeholder="אפשרות א׳&#10;אפשרות ב׳&#10;אפשרות ג׳"
-            disabled={draft.type === "open_input"}
+            disabled={draft.type !== "multiple_choice"}
           />
         </Field>
 
@@ -955,6 +1018,15 @@ function QuestionEditor({
             value={draft.explanation || ""}
             onChange={(event) => onDraftChange({ ...draft, explanation: event.target.value })}
             className="w-full px-4 py-3 rounded-xl min-h-24"
+            style={inputStyle}
+          />
+        </Field>
+
+        <Field label="מחוון">
+          <textarea
+            value={draft.rubric || ""}
+            onChange={(event) => onDraftChange({ ...draft, rubric: event.target.value })}
+            className="w-full px-4 py-3 rounded-xl min-h-20"
             style={inputStyle}
           />
         </Field>

@@ -1,6 +1,12 @@
 export type Subject = "math" | "hebrew" | "science" | "knowledge";
-export type QuestionType = "multiple_choice" | "open_input";
+export type QuestionType =
+  | "multiple_choice"
+  | "open_input"
+  | "ordering"
+  | "oral_reading"
+  | "writing_prompt";
 export type QuestionSkill = string;
+export type Grade = 1 | 2 | 3;
 
 export interface Child {
   id: string;
@@ -23,11 +29,18 @@ export interface Question {
   subject: Subject;
   type: QuestionType;
   skill: QuestionSkill;
+  grade?: Grade;
   difficultyScore: number;
   question: string;
   options?: string[];
   correctAnswer: string;
+  acceptableAnswers?: string[];
   explanation?: string;
+  rubric?: string;
+  tags?: string[];
+  maxPoints?: number;
+  readAloudAllowed?: boolean;
+  giftedPathRelevant?: boolean;
 }
 
 export interface Session {
@@ -50,7 +63,7 @@ export interface QuestionAnalyticsAttempt {
   childId: string;
   childName: string;
   parentUsername: string | null;
-  grade: 1 | 2 | 3 | null;
+  grade: Grade | null;
   answer: string;
   isCorrect: boolean;
   answeredAt: string;
