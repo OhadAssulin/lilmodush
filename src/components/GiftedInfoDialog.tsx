@@ -121,9 +121,15 @@ export function GiftedInfoDialog({ isOpen, onClose }: GiftedInfoDialogProps) {
                     className="text-base leading-relaxed"
                     style={{ fontFamily: "'Assistant', sans-serif", color: "var(--text-primary)" }}
                   >
-                    <strong style={{ color: "#3b82f6" }}>המטרה?</strong> לוודא שהילדים שלנו בקצב הנכון -
-                    מדרישות משרד החינוך ועד קבלה לתוכנית מחוננים.
-                    <strong> וכן, ברוב הימים זה מתחיל מ-20 דקות תרגול.</strong>
+                    <strong style={{ color: "#3b82f6" }}>
+                      יש גיל שבו 20 דקות ביום שוות הרבה יותר.
+                    </strong>
+                    <br />
+                    בגילאי היסודי המוח נמצא במה שנקרא בחקר המוח ״התקופה הקריטית״:
+                    הוא סופג, מתחזק ובונה את דפוסי החשיבה שילוו את הילד שנים קדימה.
+                    עם תרגול קצר, מדויק ועקבי - אפשר לעזור לילד להיות בקצב, לחשוב חד יותר,
+                    ולהגיע מוכן יותר לבית הספר, להגיע ולעקוף את דרישות משרד החינוך ולעלות
+                    דרמטית את סיכויי ההצלחה במבחני חשיבה ומחוננים.
                   </p>
                 </motion.div>
 
