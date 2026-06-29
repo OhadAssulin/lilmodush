@@ -1,5 +1,7 @@
 import { Question, Subject } from "@/types";
 
+export const QUESTION_BANK_STORAGE_KEY = "lilmodush_question_bank";
+
 const mathQuestions: Question[] = [
   {
     id: "math-1",
@@ -192,21 +194,69 @@ const knowledgeQuestions: Question[] = [
   },
 ];
 
-const allQuestions: Record<Subject, Question[]> = {
+export const defaultQuestionBank: Record<Subject, Question[]> = {
   math: mathQuestions,
   hebrew: hebrewQuestions,
   science: scienceQuestions,
   knowledge: knowledgeQuestions,
 };
 
+function cloneQuestionBank(bank: Record<Subject, Question[]>): Record<Subject, Question[]> {
+  return {
+    math: bank.math.map((question) => ({ ...question, options: question.options ? [...question.options] : undefined })),
+    hebrew: bank.hebrew.map((question) => ({ ...question, options: question.options ? [...question.options] : undefined })),
+    science: bank.science.map((question) => ({ ...question, options: question.options ? [...question.options] : undefined })),
+    knowledge: bank.knowledge.map((question) => ({ ...question, options: question.options ? [...question.options] : undefined })),
+  };
+}
+
+export function getQuestionBank(): Record<Subject, Question[]> {
+  if (typeof window === "undefined") {
+    return cloneQuestionBank(defaultQuestionBank);
+  }
+
+  const stored = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
+  if (!stored) {
+    return cloneQuestionBank(defaultQuestionBank);
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as Partial<Record<Subject, Question[]>>;
+    return {
+      math: parsed.math || [],
+      hebrew: parsed.hebrew || [],
+      science: parsed.science || [],
+      knowledge: parsed.knowledge || [],
+    };
+  } catch {
+    return cloneQuestionBank(defaultQuestionBank);
+  }
+}
+
+export function saveQuestionBank(bank: Record<Subject, Question[]>): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(QUESTION_BANK_STORAGE_KEY, JSON.stringify(bank));
+}
+
+export function resetQuestionBank(): Record<Subject, Question[]> {
+  const bank = cloneQuestionBank(defaultQuestionBank);
+  saveQuestionBank(bank);
+  return bank;
+}
+
+export function getAllQuestions(): Question[] {
+  const bank = getQuestionBank();
+  return [...bank.math, ...bank.hebrew, ...bank.science, ...bank.knowledge];
+}
+
 export function getQuestions(subject: Subject, count: number = 5): Question[] {
-  const questions = [...allQuestions[subject]];
+  const questions = [...getQuestionBank()[subject]];
   const shuffled = questions.sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }
 
 export function getRandomQuestion(subject: Subject): Question {
-  const questions = allQuestions[subject];
+  const questions = getQuestionBank()[subject];
   return questions[Math.floor(Math.random() * questions.length)];
 }
 

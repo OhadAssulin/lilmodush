@@ -40,6 +40,11 @@ export function getParent(username: string): Parent | null {
   return db.parents[username] || null;
 }
 
+export function getAllParents(): Parent[] {
+  const db = getDb();
+  return Object.values(db.parents);
+}
+
 export function addChild(username: string, child: Child): void {
   const db = getDb();
   if (!db.parents[username]) return;
