@@ -211,7 +211,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
         >
           מוודאים שהילדים שלנו עומדים בקצב הנכון.
           <br />
-          מדרישות משרד החינוך ועד קבלה לתוכנית מחוננים - וכן, זה עניין של 20 דקות תרגול ביום.
+          <strong>מדרישות משרד החינוך</strong> ועד <strong>קבלה לתוכנית מחוננים</strong> - וכן, זה עניין של 20 דקות תרגול ביום.
         </motion.p>
 
         {/* Subject icons */}
