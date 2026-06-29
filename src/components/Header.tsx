@@ -10,10 +10,11 @@ interface HeaderProps {
   onLogout?: () => void;
 }
 
-const BookOpenIcon = () => (
+const CompassIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    <circle cx="12" cy="12" r="10" />
+    <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -93,7 +94,7 @@ export function Header({ showLogin = false, username, onLogout }: HeaderProps) {
               className="absolute inset-[2px] rounded-[10px] flex items-center justify-center"
               style={{ background: "var(--bg-base)", color: "#3b82f6" }}
             >
-              <BookOpenIcon />
+              <CompassIcon />
             </div>
           </div>
 
@@ -104,7 +105,7 @@ export function Header({ showLogin = false, username, onLogout }: HeaderProps) {
               color: "var(--text-primary)",
             }}
           >
-            לילמודוש
+            המצפן
           </span>
         </motion.a>
 
