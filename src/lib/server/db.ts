@@ -13,12 +13,16 @@ export function hasSupabaseAnonKey(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+export function hasSupabasePublishableKey(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
+}
+
 export function hasSupabaseServiceRoleKey(): boolean {
   return Boolean(getSupabaseSecretKey());
 }
 
 export function hasSupabaseBrowserKey(): boolean {
-  return hasSupabaseAnonKey();
+  return hasSupabasePublishableKey() || hasSupabaseAnonKey();
 }
 
 export function hasDirectDatabaseUrl(): boolean {
@@ -30,10 +34,13 @@ export function hasDatabase(): boolean {
 }
 
 export function getSupabaseServerClient(): SupabaseClient {
-  const supabaseKey = getSupabaseSecretKey() || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseKey =
+    getSupabaseSecretKey() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseKey) {
     throw new Error(
-      "SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured"
+      "SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured"
     );
   }
 

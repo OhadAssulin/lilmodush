@@ -4,6 +4,7 @@ import {
   hasDirectDatabaseUrl,
   hasSupabaseBrowserKey,
   hasSupabaseAnonKey,
+  hasSupabasePublishableKey,
   hasSupabaseServiceRoleKey,
 } from "@/lib/server/db";
 
@@ -14,6 +15,7 @@ export async function GET() {
     configured: hasDatabase(),
     provider: "supabase",
     url: getSupabaseUrl(),
+    hasPublishableKey: hasSupabasePublishableKey(),
     hasAnonKey: hasSupabaseAnonKey(),
     hasBrowserKey: hasSupabaseBrowserKey(),
     hasSecretKey: hasSupabaseServiceRoleKey(),
