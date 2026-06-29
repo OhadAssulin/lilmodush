@@ -23,6 +23,8 @@ type DatabaseStatus = {
   provider: string;
   url?: string;
   hasAnonKey?: boolean;
+  hasBrowserKey?: boolean;
+  hasSecretKey?: boolean;
   hasServiceRoleKey?: boolean;
   canInitializeSchema?: boolean;
 };
@@ -252,8 +254,16 @@ export default function AdminPage() {
                   color: databaseStatus?.configured ? "var(--accent-success)" : "#f59e0b",
                 }}
               >
-                Supabase: {databaseStatus?.configured ? "מוגדר" : "חסר מפתח anon"}
+                Supabase: {databaseStatus?.configured ? "מוגדר לשרת" : "חסר מפתח"}
               </span>
+              {!databaseStatus?.hasBrowserKey && (
+                <span
+                  className="px-3 py-2 rounded-xl text-sm"
+                  style={{ background: "rgba(245, 158, 11, 0.12)", color: "#f59e0b" }}
+                >
+                  חסר מפתח דפדפן
+                </span>
+              )}
               <span
                 className="px-3 py-2 rounded-xl text-sm"
                 style={{ background: "var(--bg-elevated)", color: "var(--text-muted)" }}

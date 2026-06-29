@@ -14,7 +14,11 @@ export function hasSupabaseAnonKey(): boolean {
 }
 
 export function hasSupabaseServiceRoleKey(): boolean {
-  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(getSupabaseSecretKey());
+}
+
+export function hasSupabaseBrowserKey(): boolean {
+  return hasSupabaseAnonKey();
 }
 
 export function hasDirectDatabaseUrl(): boolean {
@@ -26,9 +30,11 @@ export function hasDatabase(): boolean {
 }
 
 export function getSupabaseServerClient(): SupabaseClient {
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseKey = getSupabaseSecretKey() || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseKey) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY is not configured");
+    throw new Error(
+      "SUPABASE_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured"
+    );
   }
 
   if (!supabaseClient) {
@@ -62,4 +68,8 @@ export function getSql(): Sql {
 
 function getDirectDatabaseUrl(): string | undefined {
   return process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+}
+
+function getSupabaseSecretKey(): string | undefined {
+  return process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 }

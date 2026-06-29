@@ -2,6 +2,7 @@ import {
   getSupabaseUrl,
   hasDatabase,
   hasDirectDatabaseUrl,
+  hasSupabaseBrowserKey,
   hasSupabaseAnonKey,
   hasSupabaseServiceRoleKey,
 } from "@/lib/server/db";
@@ -14,7 +15,8 @@ export async function GET() {
     provider: "supabase",
     url: getSupabaseUrl(),
     hasAnonKey: hasSupabaseAnonKey(),
-    hasServiceRoleKey: hasSupabaseServiceRoleKey(),
+    hasBrowserKey: hasSupabaseBrowserKey(),
+    hasSecretKey: hasSupabaseServiceRoleKey(),
     canInitializeSchema: hasDirectDatabaseUrl(),
   });
 }
