@@ -35,6 +35,21 @@ export interface Session {
   completedAt?: string;
 }
 
+export interface QuestionAnalyticsAttempt {
+  id: string;
+  questionId: string;
+  questionText: string;
+  subject: Subject;
+  difficulty: Question["difficulty"];
+  childId: string;
+  childName: string;
+  parentUsername: string | null;
+  grade: 1 | 2 | 3 | null;
+  answer: string;
+  isCorrect: boolean;
+  answeredAt: string;
+}
+
 export type AssessmentStatus = "מחוננים" | "מעל הקצב" | "בקצב" | "כמעט בקצב" | "צריך חיזוק";
 export type AssessmentConfidence = "נמוך" | "בינוני" | "גבוה";
 export type AssessmentReadingSupport = "with_nikud" | "without_nikud";

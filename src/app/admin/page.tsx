@@ -5,11 +5,16 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getAllParents } from "@/lib/db";
 import {
+  getQuestionAnalytics,
+  getQuestionAnalyticsSummary,
+  QuestionAnalyticsSummary,
+} from "@/lib/question-analytics";
+import {
   getQuestionBank,
   resetQuestionBank,
   saveQuestionBank,
 } from "@/lib/questions";
-import { Child, Parent, Question, Subject } from "@/types";
+import { Child, Parent, Question, QuestionAnalyticsAttempt, Subject } from "@/types";
 
 type AdminTab = "parents" | "children" | "problem-set";
 type QuestionDraft = Omit<Question, "options"> & { optionsText: string };
@@ -41,11 +46,13 @@ export default function AdminPage() {
   const [subjectFilter, setSubjectFilter] = useState<Subject | "all">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<QuestionDraft>(emptyDraft);
+  const [analyticsAttempts, setAnalyticsAttempts] = useState<QuestionAnalyticsAttempt[]>([]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setParents(getAllParents());
       setQuestionBank(getQuestionBank());
+      setAnalyticsAttempts(getQuestionAnalytics());
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -186,11 +193,12 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <Metric label="הורים" value={parents.length.toString()} />
             <Metric label="ילדים" value={children.length.toString()} />
             <Metric label="שאלות" value={questions.length.toString()} />
             <Metric label="דוחות קצב" value={totalReports.toString()} />
+            <Metric label="תשובות לשאלות" value={analyticsAttempts.length.toString()} />
           </div>
 
           <div className="flex flex-wrap gap-2 mb-6">
@@ -210,6 +218,7 @@ export default function AdminPage() {
           {activeTab === "problem-set" && (
             <ProblemSetView
               questions={filteredQuestions}
+              analyticsAttempts={analyticsAttempts}
               search={search}
               subjectFilter={subjectFilter}
               draft={draft}
@@ -363,6 +372,7 @@ function ChildrenView({ kids }: { kids: { parentUsername: string; child: Child }
 
 function ProblemSetView({
   questions,
+  analyticsAttempts,
   search,
   subjectFilter,
   draft,
@@ -378,6 +388,7 @@ function ProblemSetView({
   onRestoreDefaults,
 }: {
   questions: Question[];
+  analyticsAttempts: QuestionAnalyticsAttempt[];
   search: string;
   subjectFilter: Subject | "all";
   draft: QuestionDraft;
@@ -442,6 +453,7 @@ function ProblemSetView({
             <QuestionRow
               key={question.id}
               question={question}
+              analytics={getQuestionAnalyticsSummary(question, analyticsAttempts)}
               onEdit={() => onEditQuestion(question)}
               onDelete={() => onDeleteQuestion(question)}
             />
@@ -465,10 +477,12 @@ function ProblemSetView({
 
 function QuestionRow({
   question,
+  analytics,
   onEdit,
   onDelete,
 }: {
   question: Question;
+  analytics: QuestionAnalyticsSummary;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -504,6 +518,48 @@ function QuestionRow({
               פתרון: {question.explanation}
             </p>
           )}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4">
+            <SmallStat label="ילדים שניסו" value={analytics.uniqueChildrenCount.toString()} />
+            <SmallStat label="תשובות" value={analytics.attemptsCount.toString()} />
+            <SmallStat label="פתרו נכון" value={`${analytics.solvedCount} (${analytics.solveRate}%)`} />
+            <SmallStat label="תשובה פופולרית" value={analytics.mostPopularAnswer || "אין עדיין"} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
+            <AnalyticsPanel title="לפי כיתה">
+              {analytics.gradeBreakdown.length > 0 ? (
+                analytics.gradeBreakdown.map((grade) => (
+                  <AnalyticsLine
+                    key={grade.label}
+                    label={grade.label}
+                    value={`${grade.uniqueChildrenCount} ילדים · ${grade.solvedCount}/${grade.attemptsCount} נכון`}
+                  />
+                ))
+              ) : (
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  אין נתונים עדיין
+                </span>
+              )}
+            </AnalyticsPanel>
+
+            <AnalyticsPanel title="תשובות פופולריות">
+              {analytics.answerBreakdown.length > 0 ? (
+                analytics.answerBreakdown.slice(0, 4).map((answer) => (
+                  <AnalyticsLine
+                    key={answer.answer}
+                    label={answer.answer}
+                    value={`${answer.count} בחירות${answer.isCorrectAnswer ? " · נכונה" : ""}`}
+                    highlight={answer.isCorrectAnswer}
+                  />
+                ))
+              ) : (
+                <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  אין נתונים עדיין
+                </span>
+              )}
+            </AnalyticsPanel>
+          </div>
         </div>
         <div className="flex gap-2 shrink-0">
           <button onClick={onEdit} className="px-3 py-2 rounded-xl text-sm font-semibold" style={secondaryButtonStyle}>
@@ -651,6 +707,38 @@ function SmallStat({ label, value }: { label: string; value: string }) {
       <div className="font-bold" style={{ color: "var(--text-primary)", fontFamily: "'Rubik', sans-serif" }}>
         {value}
       </div>
+    </div>
+  );
+}
+
+function AnalyticsPanel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="p-3 rounded-2xl" style={{ background: "var(--bg-card)" }}>
+      <div className="text-xs font-semibold mb-2" style={{ color: "var(--text-muted)" }}>
+        {title}
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function AnalyticsLine({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="truncate" style={{ color: highlight ? "var(--accent-success)" : "var(--text-primary)" }}>
+        {label}
+      </span>
+      <span className="shrink-0" style={{ color: "var(--text-muted)" }}>
+        {value}
+      </span>
     </div>
   );
 }

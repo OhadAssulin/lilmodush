@@ -8,6 +8,7 @@ import { QuizCard } from "@/components/QuizCard";
 import { Footer } from "@/components/Footer";
 import { AdaptiveAssessmentDialog } from "@/components/AdaptiveAssessmentDialog";
 import { addChildAssessmentReport, getChildById, updateChildProgress } from "@/lib/db";
+import { recordQuestionAttempt } from "@/lib/question-analytics";
 import { getQuestions } from "@/lib/questions";
 import { AssessmentHistoryEntry, Child, Subject, Question } from "@/types";
 
@@ -92,6 +93,7 @@ const ArrowIcon = () => (
 export default function ChildPage({ params }: PageParams) {
   const resolvedParams = use(params);
   const [child, setChild] = useState<Child | null>(null);
+  const [parentUsername, setParentUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -104,6 +106,7 @@ export default function ChildPage({ params }: PageParams) {
     const timer = window.setTimeout(() => {
       const data = getChildById(resolvedParams.id);
       setChild(data?.child || null);
+      setParentUsername(data?.parentUsername || null);
       setLoading(false);
     }, 0);
 
@@ -131,6 +134,17 @@ export default function ChildPage({ params }: PageParams) {
   };
 
   const handleAnswer = (answer: string, isCorrect: boolean) => {
+    const currentQuestion = questions[currentQuestionIndex];
+    if (child && currentQuestion) {
+      recordQuestionAttempt({
+        question: currentQuestion,
+        child,
+        parentUsername,
+        answer,
+        isCorrect,
+      });
+    }
+
     if (isCorrect) {
       setScore((prev) => prev + 1);
     }
