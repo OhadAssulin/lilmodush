@@ -150,18 +150,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
             <span className="relative z-10 flex items-center gap-2">
               <span>🌟</span>
               <span>
-                מדרישות משרד החינוך ועד קבלה לתוכנית
-                <span
-                  className="font-bold mx-1"
-                  style={{
-                    background: "linear-gradient(135deg, #3b82f6, #06b6d4)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    textShadow: "0 0 20px rgba(59, 130, 246, 0.3)",
-                  }}
-                >
-                  מחוננים
-                </span>
+                הדרך האמיתית להשגים ועד תוכניות מצטיינים/מחוננים
               </span>
               <motion.span
                 animate={{ x: [0, 3, 0] }}
