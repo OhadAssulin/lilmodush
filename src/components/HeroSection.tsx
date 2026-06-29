@@ -193,7 +193,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <span style={{ color: "var(--text-primary)" }}>חשבון, קריאה, הבנה </span>
-          <span className="gradient-text">— 20 דק׳ ביום</span>
+          <span className="gradient-text">20 דק׳ ביום</span>
         </motion.h1>
 
         {/* Subtitle */}
